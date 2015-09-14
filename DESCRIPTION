@@ -1,0 +1,11 @@
+Package: svamp
+Type: Package
+Title: map report
+Version: 0.1
+Date: 2015-09-14
+Description: Mappy stuff
+Imports:
+	markdown,
+	knitr
+Collate:
+	'report.R'
