@@ -1,5 +1,1 @@
-
-# This is a test of the report from svamp
-
-
-The ppn in called by the function was: `r report_data_object()$ppn`
+This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         

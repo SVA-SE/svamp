@@ -2,5 +2,6 @@
 
 export(report)
 export(report_data_object)
+import(RODBC)
 import(knitr)
 import(markdown)
