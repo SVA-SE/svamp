@@ -1,1 +1,9 @@
 This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         
+
+
+```{r Outbreak, warning=FALSE, message=FALSE, echo = FALSE, results='asis'}
+
+outbreak <- subset(report_data_object()$result$farms_RT90,
+                   report_data_object()$result$farms_RT90$Ppn == report_data_object()$ppn)
+
+```

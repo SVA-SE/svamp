@@ -16,8 +16,8 @@
 #' @import RODBC
 #' @export
 
-report <- function(ppn = 222240,
-#                    ppn_obj =  "C:/svamp/svamp/data/result.rda",
+report <- function(ppn = 94403,
+                   ppn_obj =  "C:/svamp/svamp/data/result.rda",
                    firstname = "Giampaolo",
                    lastname = "Cocca",
 #                    X = 1491350,
@@ -48,25 +48,26 @@ report <- function(ppn = 222240,
   if(missing(template))
     stop("Missing 'template'")
   
-  ## connection to urax data via ODBC
+  ## connect, query urax data via ODBC and close connection
   
-#   connect <- odbcConnect("SJUKDOMSSTATUSV", 
-#   uid = "Svaladw", 
-#   pwd = "svaladwpw", 
-#   believeNRows=FALSE)
-#   
-#   urax <- sqlQuery(connect, query = " SELECT *
-#                                     FROM
-#                                     URAX.SJUKDOMSSTATUSV"
-# ) 
+  connect <- odbcConnect("SJUKDOMSSTATUSV",
+                         uid = "Svaladw",
+                         pwd = "svaladwpw",
+                         believeNRows=FALSE)
+  
+  urax <- sqlQuery(connect, query = " SELECT *
+                                    FROM
+                                    URAX.SJUKDOMSSTATUSV")
+  
+  odbcClose(connect)
 
-  ## Load the output of svsc package
+  ## Load the output of svsc package (load a list called "result" output of svdc package)
   
-#   load(ppn_obj)
+  load(ppn_obj)
     
   ## Add the ppn argument to the .svamp_env so it can be accessed inside the .Rmd
   assign("ppn", ppn, envir = .svamp_env)
-#   assign("ppn_obj", ppn_obj, envir = .svamp_env)
+  assign("result", result, envir = .svamp_env)
   assign("firstname", firstname, envir = .svamp_env)
   assign("lastname", lastname, envir = .svamp_env)
 #   assign("X", X, envir = .svamp_env)
