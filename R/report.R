@@ -1,4 +1,4 @@
-#' Produce an .html report 
+#' Produce an .html report
 #'
 #' Produce an .html report with information for outbreak/suspicion management
 #' @param ppn ppn number (single scalar value)
@@ -34,37 +34,37 @@ report <- function(ppn = 94403,
   }
   ## Clean up the environment upon exiting the function
   on.exit(rm(list=ls(envir=.svamp_env), envir=.svamp_env))
-  
+
   ## Check arguments
   if(missing(ppn))
     stop("Missing 'ppn'")
-  
+
   if(missing(firstname))
     stop("Missing 'firstname'")
-  
+
   if(missing(lastname))
     stop("Missing 'lastname'")
-  
+
   if(missing(template))
     stop("Missing 'template'")
-  
+
   ## connect, query urax data via ODBC and close connection
-  
+
   connect <- odbcConnect("SJUKDOMSSTATUSV",
                          uid = "Svaladw",
                          pwd = "svaladwpw",
                          believeNRows=FALSE)
-  
+
   urax <- sqlQuery(connect, query = " SELECT *
                                     FROM
                                     URAX.SJUKDOMSSTATUSV")
-  
+
   odbcClose(connect)
 
   ## Load the output of svsc package (load a list called "result" output of svdc package)
-  
+
   load(ppn_obj)
-    
+
   ## Add the ppn argument to the .svamp_env so it can be accessed inside the .Rmd
   assign("ppn", ppn, envir = .svamp_env)
   assign("result", result, envir = .svamp_env)
@@ -75,17 +75,17 @@ report <- function(ppn = 94403,
 #   assign("buf1", buf1, envir = .svamp_env)
 #   assign("buf2", buf2, envir = .svamp_env)
 #   assign("buf3", buf3, envir = .svamp_env)
-  
+
   template <- system.file(file.path(format, paste0(template, ".Rmd")), package = "svamp")
-  
-  outputfile_md <- tempfile(fileext = ".md")
+
+##  outputfile_md <- tempfile(fileext = ".md")
   outputfile_html <- tempfile(fileext = ".html")
-  knit(template, outputfile_md)
-  
-  markdownToHTML(file = outputfile_md,
-                 output = outputfile_html)
-  
-  
+##  knit(template, outputfile_md)
+
+  knit2html(input = template,
+            output = outputfile_html)
+
+
   return(readLines(outputfile_html))
 
 }
