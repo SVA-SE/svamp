@@ -7,3 +7,24 @@ outbreak <- subset(report_data_object()$result$farms_RT90,
                    report_data_object()$result$farms_RT90$Ppn == report_data_object()$ppn)
 
 ```
+
+<br>
+
+### 1. GEOGRAPHIC LOCATION
+
+* The PPN under investigation is located in __`r toupper(paste(outbreak@data$Lan))`__ within the municipality of __`r toupper(paste(outbreak@data$Kommun))`__ 
+
+* The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
+
+
+```{r }
+
+NUTS_03M <- report_data_object()$NUTS_03M[
+            report_data_object()$NUTS_03M$STAT_LEVL_ == 3, 1:2]
+NUTS_03M@data$Lan <- report_data_object()$result$nuts_label$Swedish[
+                       match(as.character(NUTS_03M@data$NUTS_ID),
+                             report_data_object()$result$nuts_label$NUTS)]
+
+
+plot(NUTS_03M, axes=T)
+```

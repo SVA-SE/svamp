@@ -14,6 +14,7 @@
 #' @import markdown
 #' @import knitr
 #' @import RODBC
+#' @import sp
 #' @export
 
 report <- function(ppn = 94403,
@@ -48,24 +49,30 @@ report <- function(ppn = 94403,
   if(missing(template))
     stop("Missing 'template'")
   
-  ## connect, query urax data via ODBC and close connection
+  ## connection via ODBC and query urax data, then close the connection
   
-  connect <- odbcConnect("SJUKDOMSSTATUSV",
-                         uid = "Svaladw",
-                         pwd = "svaladwpw",
-                         believeNRows=FALSE)
-  
-  urax <- sqlQuery(connect, query = " SELECT *
-                                    FROM
-                                    URAX.SJUKDOMSSTATUSV")
-  
-  odbcClose(connect)
+#   connect <- odbcConnect("SJUKDOMSSTATUSV",
+#                          uid = "Svaladw",
+#                          pwd = "svaladwpw",
+#                          believeNRows=FALSE)
+#   
+#   urax <- sqlQuery(connect, query = " SELECT *
+#                                     FROM
+#                                     URAX.SJUKDOMSSTATUSV")
+#   
+#   odbcClose(connect)
 
   ## Load the output of svsc package (load a list called "result" output of svdc package)
   
   load(ppn_obj)
+
+  ## Load spatialpolygondataframe sticked in the ../svamp/data folder
+
+  data(NUTS_03M, package = "svamp", envir = .svamp_env)
+  data(postnummer, package = "svamp", envir = .svamp_env)
     
   ## Add the ppn argument to the .svamp_env so it can be accessed inside the .Rmd
+
   assign("ppn", ppn, envir = .svamp_env)
   assign("result", result, envir = .svamp_env)
   assign("firstname", firstname, envir = .svamp_env)
@@ -87,6 +94,10 @@ report <- function(ppn = 94403,
   
   
   return(readLines(outputfile_html))
+
+# td <- tempdir()
+# a <- normalizePath(file.path(td, outputfile_html))
+# return(a)
 
 }
 
