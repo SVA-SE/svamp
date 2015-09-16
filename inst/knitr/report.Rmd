@@ -1,7 +1,7 @@
 This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         
 
 
-```{r Outbreak, warning=FALSE, message=FALSE, echo = FALSE, results='asis'}
+```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis'}
 
 outbreak <- subset(report_data_object()$result$farms_RT90,
                    report_data_object()$result$farms_RT90$Ppn == report_data_object()$ppn)
@@ -17,7 +17,7 @@ outbreak <- subset(report_data_object()$result$farms_RT90,
 * The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
 
 
-```{r PlotMap1, warning=FALSE, message=FALSE, echo = FALSE, results='asis', fig.height=14, fig.width=14}
+```{r PlotMap1, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14}
 
 NUTS_03M <- report_data_object()$NUTS_03M[
             report_data_object()$NUTS_03M$STAT_LEVL_ == 3, 1:2]
@@ -26,27 +26,66 @@ NUTS_03M@data$Lan <- report_data_object()$result$nuts_label$Swedish[
                              report_data_object()$result$nuts_label$NUTS)]
 
 
-plot(NUTS_03M, axes=T)
+plot(NUTS_03M, axes = T)
 
-# Account for points falling outside Swedish border
-if(all(!is.na(over(outbreak, NUTS_03M)))){
-lan <- over(outbreak,NUTS_03M)
-lan <- NUTS_03M[NUTS_03M@data$NUTS_ID==lan$NUTS_ID,]
-plot(lan, add=T, col="yellow")
-}#else{
-#   plot(1,1,col="white")
-#   text(1,1,"provided coordinates fall outside Swedish borders")
+# Check for points falling outside Swedish border
 
-points(outbreak, pch=19, col="red", cex=1)
+if(all(!is.na(over(outbreak, NUTS_03M)))) {
+  
+  lan <- over(outbreak,NUTS_03M)
+  lan <- NUTS_03M[NUTS_03M@data$NUTS_ID == lan$NUTS_ID,]
+  plot(lan, add = T, col = "yellow")
+
+}else{
+   
+  plot(1,1,col="white")
+  text(1,1,"Provided coordinates fall outside the Swedish borders")
+}
+
+points(outbreak, pch = 19, col = "red", cex = 1)
+
+# Add labels to the polygons
+
 invisible(text(coordinates(NUTS_03M),
-               labels=as.character(NUTS_03M@data$Lan), 
-               cex=0.8))
+               labels = as.character(NUTS_03M@data$Lan), 
+               cex = 0.8))
+
 title(expression(paste("Geographic location of the PPN under investigation")))
+
 legend("bottomright",
-        cex=1.3, 
+        cex = 1.3, 
         "PPN location", 
-        pch=19, 
+        pch = 19, 
         pt.cex = 1.2,
-        col="red",
-        bty="n")
+        col = "red",
+        bty = "n")
 ```
+
+* The PPN is geolocated at the following coordinates (Swedish projection RT90):  
+
+Coordinate X (RT90): __`r as.integer(outbreak@coords[,1])`__   
+Coordinate Y (RT90): __`r as.integer(outbreak@coords[,2])`__    
+
+
+```{r Outbreak_WGS84, warning = FALSE, message = FALSE, echo = FALSE}
+
+outbreak_WGS84 <- spTransform(outbreak, CRS("+init=epsg:4326"))
+
+```
+
+* The PPN is geolocated at the following coordinates (Coordinate Reference System WGS84):
+
+Coordinate X (WGS84): __`r outbreak_WGS84@coords[,1]`__   
+Coordinate Y (WGS84): __`r outbreak_WGS84@coords[,2]`__     
+
+```{r Outbreak_SWEREF99, warning = FALSE, message = FALSE, echo = FALSE}
+
+outbreak_SWEREF99 <- spTransform(outbreak_WGS84, CRS("+init=epsg:3006"))
+
+```
+
+* The PPN is geolocated at the following coordinates (Swedish projection SWEREF99):
+
+Coordinate X (SWEREF99): __`r outbreak_SWEREF99@coords[,1]`__   
+Coordinate Y (SWEREF99): __`r outbreak_SWEREF99@coords[,2]`__ 
+
