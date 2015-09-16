@@ -17,7 +17,7 @@ outbreak <- subset(report_data_object()$result$farms_RT90,
 * The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
 
 
-```{r }
+```{r PlotMap1, warning=FALSE, message=FALSE, echo = FALSE, results='asis', fig.height=14, fig.width=14}
 
 NUTS_03M <- report_data_object()$NUTS_03M[
             report_data_object()$NUTS_03M$STAT_LEVL_ == 3, 1:2]
@@ -27,4 +27,26 @@ NUTS_03M@data$Lan <- report_data_object()$result$nuts_label$Swedish[
 
 
 plot(NUTS_03M, axes=T)
+
+# Account for points falling outside Swedish border
+if(all(!is.na(over(outbreak, NUTS_03M)))){
+lan <- over(outbreak,NUTS_03M)
+lan <- NUTS_03M[NUTS_03M@data$NUTS_ID==lan$NUTS_ID,]
+plot(lan, add=T, col="yellow")
+}#else{
+#   plot(1,1,col="white")
+#   text(1,1,"provided coordinates fall outside Swedish borders")
+
+points(outbreak, pch=19, col="red", cex=1)
+invisible(text(coordinates(NUTS_03M),
+               labels=as.character(NUTS_03M@data$Lan), 
+               cex=0.8))
+title(expression(paste("Geographic location of the PPN under investigation")))
+legend("bottomright",
+        cex=1.3, 
+        "PPN location", 
+        pch=19, 
+        pt.cex = 1.2,
+        col="red",
+        bty="n")
 ```

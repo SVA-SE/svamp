@@ -94,11 +94,11 @@ report <- function(ppn = 94403,
             output = outputfile_html)
 
 
-  return(readLines(outputfile_html))
+  #return(readLines(outputfile_html))
 
-# td <- tempdir()
-# a <- normalizePath(file.path(td, outputfile_html))
-# return(a)
+td <- tempdir()
+a <- normalizePath(file.path(td, outputfile_html), winslash = "/")
+return(a)
 
 }
 
