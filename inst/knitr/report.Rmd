@@ -3,8 +3,10 @@ This report was requested by __`r paste(as.character(toupper(report_data_object(
 
 ```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis'}
 
-outbreak <- subset(report_data_object()$result$farms_RT90,
-                   report_data_object()$result$farms_RT90$Ppn == report_data_object()$ppn)
+farms_RT90 <- report_data_object()$result$farms_RT90
+ppn <- report_data_object()$ppn
+
+outbreak <- subset(farms_RT90, farms_RT90$Ppn == ppn)
 
 ```
 
@@ -108,8 +110,8 @@ outbreak %>% addCircleMarkers(color = "red")
 
 ```{r herds/anim_outbreak, results='asis', fig.height=4, fig.width=12, echo=FALSE}
 
-outb.in.PPN <-  report_data_object()$result$PPN[which(
-                report_data_object()$result$PPN$Ppn %in% outbreak@data$Ppn), ]
+PPN <- report_data_object()$result$PPN
+outb.in.PPN <-  PPN[which(PPN$Ppn %in% outbreak@data$Ppn), ]
 
 # temp <- outb.in.PPN
 # temp <- enc2latin1(temp)
@@ -176,3 +178,31 @@ if (all(is.na(outb.in.PPN$tot_anim))) {
     text(x = b1b, y = counts2, label = counts2,
          pos = 3, cex = 0.8, col = "black")
 }
+
+```
+
+<br>
+
+### 3. OWNERS INFORMATION
+
+```{r Match_Owners, results='asis', echo=FALSE}
+
+index <- match(PPN$Ppn, outbreak@data$Ppn)
+outbreak_own <- PPN[which(PPN$Ppn == outbreak@data$Ppn), ]
+n.owners <- length(unique(outbreak_own$Namn))
+
+```
+
+The number of owners/reference persons for the PPN under investigation is: __`r n.owners`__
+
+```{r OwnersData, results = 'asis',echo = FALSE}
+
+colnames(outbreak_own)[c(33, 36, 37, 31)] <- c("Adress",
+                                            "Postadress",
+                                            "Telefonnummer",
+                                            "Typ")
+
+kable(unique(outbreak_own[,c(32, 33, 36, 37, 38, 39, 31)]), 
+      format = "markdown", align = 'c', row.names = FALSE)
+```
+
