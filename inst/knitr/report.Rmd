@@ -89,3 +89,90 @@ outbreak_SWEREF99 <- spTransform(outbreak_WGS84, CRS("+init=epsg:3006"))
 Coordinate X (SWEREF99): __`r outbreak_SWEREF99@coords[,1]`__   
 Coordinate Y (SWEREF99): __`r outbreak_SWEREF99@coords[,2]`__ 
 
+
+```{r LeafletMap1, warning=FALSE, message=FALSE, echo = FALSE, eval=FALSE}
+
+library(leaflet)
+
+outbreak1 <- outbreak[,c(1,4,8,11,41)]
+outbreak1 <- spTransform(outbreak1, CRS("+init=epsg:4326"))
+
+outbreak <- leaflet(outbreak1) %>% addTiles()
+
+outbreak %>% addCircleMarkers(color = "red")
+```
+
+<br>
+
+### 2. NUMBER OF HERDS AND ANIMALS (for the investigated PPN)
+
+```{r herds/anim_outbreak, results='asis', fig.height=4, fig.width=12, echo=FALSE}
+
+outb.in.PPN <-  report_data_object()$result$PPN[which(
+                report_data_object()$result$PPN$Ppn %in% outbreak@data$Ppn), ]
+
+# temp <- outb.in.PPN
+# temp <- enc2latin1(temp)
+# outbreak.csv <<- write.csv2(temp, 
+#                            "csv/Outbreak.csv",
+#                            row.names=F)
+
+outb.in.PPN <- outb.in.PPN[!duplicated(outb.in.PPN [c("Ppn", 
+                                                  "Adress", 
+                                                  "Typ", 
+                                                  "Typ.1", 
+                                                  "tot_anim")]),]
+counts <- table(outb.in.PPN$Typ)
+
+# Draw the graph with herds/animals count for the outbreak
+
+par(mfrow = c(1,2), mar=c(5.1, 4.8, 4.1, 2.1), 
+    mgp=c(3.8, 1, 0), las=2)
+
+width = ifelse(length(counts) == 1, 0.2, 0.8)
+
+
+
+b1a <- barplot(counts,
+               main = "Number of herds by species", 
+               ylab = "Number of herds", 
+               xlim = c(0, length(counts)),
+               ylim = c(0, max(counts * 1.4)),
+               width = width)
+
+text(x = b1a, y = counts, label = counts, 
+     pos = 3, cex = 0.8, col = "black")
+
+if (all(is.na(outb.in.PPN$tot_anim))) {
+
+    counts2 <- 0
+
+    b1b <- barplot(counts2, 
+               main = "Number of animals by species", 
+               xaxt = "n", 
+               xlab = "", 
+               ylab = "", 
+               col = "white", 
+               border = NA, 
+               sub =  "Number of animals is NA. See Excel file for details")
+
+} else {
+
+    outb.in.PPN <- outb.in.PPN [!is.na(outb.in.PPN$tot_anim),]
+
+    counts2 <-tapply(outb.in.PPN$tot_anim, 
+                     INDEX = outb.in.PPN$Typ, 
+                     FUN = sum)
+    
+    width = ifelse(length(counts2) == 1, 0.2, 0.8)
+
+    b1b <- barplot(counts2, 
+               main = "Number of animals by species",
+               ylab = "Number of animals", 
+               ylim = c(0, max(counts2 * 1.4)),
+               xlim = c(0, length(counts2)),
+               width = width)
+
+    text(x = b1b, y = counts2, label = counts2,
+         pos = 3, cex = 0.8, col = "black")
+}
