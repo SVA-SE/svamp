@@ -104,6 +104,7 @@ outbreak <- leaflet(outbreak1) %>% addTiles()
 outbreak %>% addCircleMarkers(color = "red")
 ```
 
+****
 <br>
 
 ### 2. NUMBER OF HERDS AND ANIMALS (for the investigated PPN)
@@ -119,11 +120,11 @@ outb.in.PPN <-  PPN[which(PPN$Ppn %in% outbreak@data$Ppn), ]
 #                            "csv/Outbreak.csv",
 #                            row.names=F)
 
-outb.in.PPN <- outb.in.PPN[!duplicated(outb.in.PPN [c("Ppn", 
-                                                  "Adress", 
-                                                  "Typ", 
-                                                  "Typ.1", 
-                                                  "tot_anim")]),]
+outb.in.PPN <- outb.in.PPN[!duplicated(outb.in.PPN [c("Ppn",
+                                                      "Adress",
+                                                      "Typ",
+                                                      "Typ.1",
+                                                      "tot_anim")]),]
 counts <- table(outb.in.PPN$Typ)
 
 # Draw the graph with herds/animals count for the outbreak
@@ -181,6 +182,7 @@ if (all(is.na(outb.in.PPN$tot_anim))) {
 
 ```
 
+****
 <br>
 
 ### 3. OWNERS INFORMATION
@@ -198,11 +200,94 @@ The number of owners/reference persons for the PPN under investigation is: __`r 
 ```{r OwnersData, results = 'asis',echo = FALSE}
 
 colnames(outbreak_own)[c(33, 36, 37, 31)] <- c("Adress",
-                                            "Postadress",
-                                            "Telefonnummer",
-                                            "Typ")
+                                               "Postadress",
+                                               "Telefonnummer",
+                                               "Typ")
 
-kable(unique(outbreak_own[,c(32, 33, 36, 37, 38, 39, 31)]), 
-      format = "markdown", align = 'c', row.names = FALSE)
+kable(unique(outbreak_own[,c(32, 33, 36, 37, 38, 39, 31)]),
+      align = 'c', row.names = FALSE)
+
+```
+
+****
+<br>
+
+### 4. VETERINARY DISTRICTS INFORMATION
+
+The 3 most closest veterinary districts (euclidean distance) from the investigated PPN position are: 
+
+```{r VetDistrictDist, warning=FALSE, message=FALSE, echo = FALSE, results='asis'}
+
+district_geo_RT90 <- report_data_object()$result$district_geo_RT90
+
+# calculate euclidean distance from outbreak to vet disctrict
+dist_vet <- spDistsN1(district_geo_RT90, outbreak, longlat = FALSE)/ 1000
+dist_vet <- round(dist_vet, 3)
+dist_vet <- cbind(district_geo_RT90@data[ , 2:6], dist_vet)
+dist_vet <- dist_vet[order(dist_vet[, 6]), ]
+
+# show only the three most closest
+kable(head(dist_vet, 3), align = 'c', digits = 1, row.names = FALSE)
+
+```
+
+
+****
+
+<br>
+
+### 5. RESTRICTION ZONES
+
+This section generates 3 circular restriction zones centered at the PPN's coordinates. If PPN coordinates were missing in the dataset, the circular buffers are centred on the provided coordinates. The zones have different radius: 
+
+* 1 km (red zone)    
+* 3 km (yellow zone)    
+* 10 km (green zone)    
+
+```{r Buffers, results = 'asis', echo = FALSE, warning = TRUE, message = TRUE}
+
+#Buffers and Outbreak: Create multiple buffers
+x <- coordinates(outbreak)[, 1] # Outbreak coord x
+y <- coordinates(outbreak)[, 2] # Outbreak coord y
+
+# So far working for 1 ppn per time
+stopifnot(length(x) == 1 & length(y) == 1)
+
+# Buffer. Draw a circle with 1 km radius
+nr = 500 # n. of points
+r = 1000 #input$buf1 # radius
+buf1 = seq(0, 2 * pi, length.out = nr)
+xy = cbind(x + r * sin(buf1), y + r * cos(buf1))
+
+# Create the spatial object
+buf_sp1 = SpatialPolygons(
+  list(Polygons(
+  list(Polygon(xy)), "1km")))
+proj4string(buf_sp1) <- CRS("+init=epsg:3021")
+
+#  Buffer. Draw a circle with 3 km radius
+nr3 = 500 # n. of points
+r3 = 3000 #input$buf2  # radius
+buf3 = seq(0, 2 * pi, length.out = nr3)
+xz = cbind(x + r3 * sin(buf3), y + r3 * cos(buf3))
+
+# Create a "donut" insted of a buffer. 1 km is a hole in the 3 km buffer 
+buf_sp3 = SpatialPolygons(
+  list(Polygons(
+  list(Polygon(xz, hole = F), Polygon(xy, hole = T)), "3km")))
+proj4string(buf_sp3) <- CRS("+init=epsg:3021")
+
+# Buffer. Draw a circle with 10 km radius
+nr10 = 500 # n. of points
+r10 = 10000 #input$buf3  # radius
+buf10 = seq(0, (2 * pi), length.out = nr10)
+yz = cbind(x + r10 * sin(buf10), y + r10 * cos(buf10))
+
+# Create a "donut" insted of a buffer. 3km is a hole in the 10km buffer
+buf_sp10 = SpatialPolygons(
+          list(Polygons(
+          list(Polygon(yz, hole = F), Polygon(xz, hole = T)), "10km" )))
+proj4string(buf_sp10) <- CRS("+init=epsg:3021")
+
 ```
 
