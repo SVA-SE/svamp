@@ -11,8 +11,8 @@
 #' @param buf2 Size in meters of the second buffer drawn around the ppn
 #' @param buf3 Size in meters of the third buffer drawn around the ppn
 #' @return An html report
-#' @import markdown
-#' @import knitr
+#' @import rmarkdown
+#' @import leaflet
 #' @import RODBC
 #' @import sp
 #' @export
@@ -86,19 +86,13 @@ report <- function(ppn = 94403,
 
   template <- system.file(file.path(format, paste0(template, ".Rmd")), package = "svamp")
 
-##  outputfile_md <- tempfile(fileext = ".md")
-  outputfile_html <- tempfile(fileext = ".html")
-##  knit(template, outputfile_md)
-
-  knit2html(input = template,
-            output = outputfile_html)
-
+  outputfile_html <- rmarkdown::render(template)
 
   #return(readLines(outputfile_html))
 
-td <- tempdir()
-a <- normalizePath(file.path(td, outputfile_html), winslash = "/")
-return(a)
+  td <- tempdir()
+  a <- normalizePath(file.path(outputfile_html), winslash = "/")
+  return(a)
 
 }
 
@@ -108,6 +102,7 @@ return(a)
 ##'
 ##' @return The current object when generating a report
 ##' @export
+
 report_data_object <- function() {
   .svamp_env
 }
