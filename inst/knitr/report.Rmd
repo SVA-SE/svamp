@@ -101,7 +101,8 @@ LeafletMap1 <- leaflet(outbreak1_wgs) %>% addProviderTiles("CartoDB.Positron")
 
 LeafletMap1 %>% addCircleMarkers(stroke = FALSE,
                                  fill = TRUE, 
-                                 fillColor = "red")
+                                 fillColor = "black",
+                                 fillOpacity = 1)
 ```
 
 ****
@@ -711,3 +712,143 @@ if(!identical(farms_in10_RT90, outbreak1)) {
 ****
 
 <br>
+
+### 7. TYPE AND NUMBER OF ANIMALS
+
+```{r PPNsDistance, results='asis', echo=FALSE}
+
+if(!identical(farms_in1_RT90, outbreak1)) {
+  
+  dist_farms_in1_RT90 <- data.frame(farms_in1_RT90@data$Ppn,
+                                    spDistsN1(farms_in1_RT90,
+                                              outbreak,
+                                              longlat = FALSE))
+  
+  colnames(dist_farms_in1_RT90) <- c("Ppn", "distance")
+} 
+
+if(!identical(farms_in3_RT90, outbreak1)) {
+
+  dist_farms_in3_RT90 <- data.frame(farms_in3_RT90@data$Ppn,
+                                    spDistsN1(farms_in3_RT90,
+                                              outbreak,
+                                              longlat = FALSE))
+  
+  colnames(dist_farms_in3_RT90) <- c("Ppn", "distance")
+} 
+
+if(!identical(farms_in10_RT90, outbreak1)) {
+  
+  dist_farms_in10_RT90 <- data.frame(farms_in10_RT90@data$Ppn,
+                                     spDistsN1(farms_in10_RT90,
+                                               outbreak,
+                                               longlat = FALSE))
+  
+  colnames(dist_farms_in10_RT90)<-c("Ppn","distance")
+}
+```
+
+This section reports the number of animals per each PPN included within  1, 3, 10 km radius. PPNs are displayed in ascending order by distance from the investigated PPN location.     
+Some PPNs showed repeated records, due to dupliceted entries in "Typ.2" field distinguishing "DJURHALLARE" and "DJURINNEHAVARE". Such records are not shown in the following tables. However, the comprehensive list of PPN's records is available clicking the link to the excel files present at the bottom of each table.
+
+<br>
+
+#### 7.1 PPNs WHITHIN 1 KM RADIUS
+
+<br>
+
+```{r Anim1kmTable, echo=FALSE, results='asis', warning=FALSE, message=FALSE}
+
+if(!identical(farms_in1_RT90, outbreak1)) {
+  anim1 <- merge(dist_farms_in1_RT90, n.PPN.in1, by = "Ppn")
+  anim1 <- anim1[order(anim1$distance, anim1$Typ), ]
+  colnames(anim1)[2] <- "distans(m)"
+  
+# Table
+anim1_DT <- anim1[, c(1,2,11,14,19,26,43)]
+  
+datatable(anim1_DT,
+          options = list(
+            columnDefs = list(
+              list(className = 'dt-center',
+                   targets = c(0,1,4,5,6))
+              )
+            )
+          )  %>% formatRound('distans(m)', 0)
+
+} else {
+  
+  cat("* **No PPNs other than the investigated PPN within the radius of 1km**")
+
+}
+
+```
+
+
+<br>
+
+#### 7.2 PPNs WHITHIN 3 KM RADIUS
+
+<br>
+
+```{r Anim3kmTable, results='asis', echo=FALSE}
+
+if(!identical(farms_in3_RT90, outbreak1)){
+  anim3 <- merge(dist_farms_in3_RT90, n.PPN.in3, by = "Ppn")
+  anim3 <- anim3[order(anim3$distance, anim3$Typ), ]
+  colnames(anim3)[2] <- "distans(m)"
+
+# Table
+  anim3_DT <- anim3[, c(1,2,11,14,19,26,43)]
+  datatable(anim3_DT,
+            options = list(
+              columnDefs = list(
+                list(className = 'dt-center',
+                     targets = c(0,1,4,5,6))
+                )
+              )
+            ) %>% formatRound('distans(m)', 0)
+
+} else {
+  
+  cat("* **No PPNs other than the investigated PPN within the radius of 3 km**")
+
+}
+```
+
+
+<br>
+
+#### 7.3 PPNs WHITHIN 10 KM RADIUS
+
+<br>
+
+```{r Anim10kmTable, results='asis', echo=FALSE}
+
+if(!identical(farms_in10_RT90, outbreak1)){
+  anim10 <- merge(dist_farms_in10_RT90, n.PPN.in10, by = "Ppn")
+  anim10 <- anim10[order(anim10$distance, anim10$Typ), ]
+  colnames(anim10)[2] <- "distans(m)"
+  
+  # Table
+  anim10_DT <- anim10[, c(1,2,11,14,19,26,43)]
+  datatable(anim10_DT,
+            options = list(
+              columnDefs = list(
+                list(className = 'dt-center',
+                     targets = c(0,1,4,5,6))
+                )
+              )
+            ) %>% formatRound('distans(m)', 0)
+
+} else {
+  
+  cat("* **No PPNs other than the investigated PPN within the radius of 10 km**")
+
+}
+```
+
+
+<br>
+
+***
