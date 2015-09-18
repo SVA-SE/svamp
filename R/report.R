@@ -16,11 +16,12 @@
 #' @import RODBC
 #' @import knitr
 #' @import wordcloud
+#' @import DT
 #' @import sp
 #' @export
 
 report <- function(ppn = 94403,
-                   ppn_obj =  "C:/svamp/svamp/data/result.rda",
+                   ppn_obj = system.file("extdata/result.rda", package = "svamp"),
                    firstname = "Giampaolo",
                    lastname = "Cocca",
 #                    X = 1491350,
@@ -28,7 +29,7 @@ report <- function(ppn = 94403,
 #                    buf1 = 1000,
 #                    buf2 = 3000,
 #                    buf3 = 10000,
-                   template,
+                   template = "report",
                    format = c("knitr")) {
 
   ## Check to make sure the environment is empty
@@ -38,18 +39,18 @@ report <- function(ppn = 94403,
   ## Clean up the environment upon exiting the function
   on.exit(rm(list=ls(envir=.svamp_env), envir=.svamp_env))
 
-  ## Check arguments
-  if(missing(ppn))
-    stop("Missing 'ppn'")
-
-  if(missing(firstname))
-    stop("Missing 'firstname'")
-
-  if(missing(lastname))
-    stop("Missing 'lastname'")
-
-  if(missing(template))
-    stop("Missing 'template'")
+#   ## Check arguments
+#   if(missing(ppn))
+#     stop("Missing 'ppn'")
+# 
+#   if(missing(firstname))
+#     stop("Missing 'firstname'")
+# 
+#   if(missing(lastname))
+#     stop("Missing 'lastname'")
+# 
+#   if(missing(template))
+#     stop("Missing 'template'")
   
   ## connection via ODBC and query urax data, then close the connection
   

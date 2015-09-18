@@ -2,6 +2,7 @@
 
 export(report)
 export(report_data_object)
+import(DT)
 import(RODBC)
 import(knitr)
 import(leaflet)

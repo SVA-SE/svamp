@@ -4,9 +4,9 @@
 \alias{report}
 \title{Produce an .html report}
 \usage{
-report(ppn = 94403, ppn_obj = "C:/svamp/svamp/data/result.rda",
-  firstname = "Giampaolo", lastname = "Cocca", template,
-  format = c("knitr"))
+report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
+  "svamp"), firstname = "Giampaolo", lastname = "Cocca",
+  template = "report", format = c("knitr"))
 }
 \arguments{
 \item{ppn}{ppn number (single scalar value)}
