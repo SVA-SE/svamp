@@ -14,6 +14,8 @@
 #' @import rmarkdown
 #' @import leaflet
 #' @import RODBC
+#' @import knitr
+#' @import wordcloud
 #' @import sp
 #' @export
 
