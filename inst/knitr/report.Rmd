@@ -96,13 +96,15 @@ kable(df, digits=1, row.names = FALSE)
 
 outbreak1 <- outbreak[ , c(1, 4, 8, 11, 41)]
 outbreak1_wgs <- spTransform(outbreak1, CRS("+init=epsg:4326"))
+pop_out <- paste(outbreak1_wgs@data)
 
 LeafletMap1 <- leaflet(outbreak1_wgs) %>% addProviderTiles("CartoDB.Positron")
 
 LeafletMap1 %>% addCircleMarkers(stroke = FALSE,
                                  fill = TRUE, 
                                  fillColor = "black",
-                                 fillOpacity = 1)
+                                 fillOpacity = 1,
+                                 popup = pop_out)
 ```
 
 ****
@@ -439,6 +441,8 @@ farms_in10_84 <- spTransform(farms_in10_RT90,
 
 # final map
 
+pop_out <- paste0(outbreak2@data)
+
 LeafletMap2 <- leaflet() %>% addProviderTiles("CartoDB.Positron")
 
 LeafletMap2 %>%
@@ -467,7 +471,8 @@ LeafletMap2 %>%
                    stroke = FALSE,
                    fill = TRUE,
                    fillColor = "black",
-                   fillOpacity = 1) 
+                   fillOpacity = 1,
+                   popup = pop_out) 
 
 ```
 
@@ -852,3 +857,230 @@ if(!identical(farms_in10_RT90, outbreak1)){
 <br>
 
 ***
+
+### 8. ANALYSIS OF CONTACTS (EpiContactTrace)
+
+The analysis covers the last __90__ days from the date of report generation (__`r Sys.Date()`__).   
+The most recent movements reported into the database are from __`r unique(max(report_data_object()$result$ani_move$t))`__.    
+
+<br>
+
+OBS! Animal movement data may be reported to Jordbruksverket as late as 7 days after a movement has occured
+
+
+```{r EpicontacTrace, results='html',warning=FALSE, message=FALSE, comment=NA,echo=FALSE}
+
+transfers <- report_data_object()$result$ani_move
+outbreak <- outbreak@data$Ppn
+
+# Perform contact tracing
+
+contactTrace <- Trace(movements = report_data_object()$result$ani_move,
+                      root = outbreak,
+                      tEnd = Sys.Date(),
+                      days = 90)
+
+show(contactTrace)
+
+```
+
+<br>
+
+***
+
+### 9 MISSING COORDINATES
+
+```{r Missing,results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+
+postnum_miss <- report_data_object()$result$postnum_miss
+
+# FIX ASSIGNPROJ IN SVDC
+proj4string(postnum_miss) <- CRS("+init=epsg:3021")
+
+PPN_na <- report_data_object()$result$PPN_na
+
+if (!all(is.na(over(postnum_miss, buf_sp1)))) {
+  
+  intersec1km <- postnum_miss[buf_sp1, ]
+ 
+  # match postnummer with postnummer of PPN is.na
+    PPN_pro1km <- PPN_na[PPN_na$Postnummer %in% 
+                          intersec1km@data$POSTALCODE, ]
+}
+
+if (!all(is.na(over(postnum_miss, buf_sp3)))) {
+  
+  intersec3km <- postnum_miss[buf_sp3, ]
+  
+  PPN_pro3km <- PPN_na[PPN_na$Postnummer %in% 
+                          intersec3km@data$POSTALCODE, ]
+}
+
+if (!all(is.na(over(postnum_miss, buf_sp10)))) {
+  
+  intersec10km <- postnum_miss[buf_sp10, ]
+  
+  PPN_pro10km <- PPN_na[PPN_na$Postnummer %in% 
+                          intersec10km@data$POSTALCODE, ]
+   
+}
+
+```
+
+Only zip-codes (Postnummer) including PPNs with missing coordinates are displayed in the figure. White colored postnummers, when present, only include PPNs without missing coordinates, that were thus *a priori* excluded from the analysis.        
+Note that generally the total number of PPNs for 10 km radius comprises PPNs already reported for 3 km and 1 km radius. PPNs lists for 3 km comprises PPNs already reported for 1 km radius.
+
+* There are __`r if(exists("PPN_pro1km")){length(unique(PPN_pro1km$Ppn))}else{"0"}`__ PPNs within postnummers intersecting the buffer of __1 km__ radius     
+* There are __`r if(exists("PPN_pro3km")){length(unique(PPN_pro3km$Ppn))}else{"0"}`__ PPNs within postnummers intersecting the buffer of __3 km__  radius     
+* There are __`r if(exists("PPN_pro10km")){length(unique(PPN_pro10km$Ppn))}else{"0"}`__ PPNs within the postnummers intersecting the buffer of __10 km__  radius
+
+
+```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE}
+
+postnum_not_miss <- report_data_object()$result$postnum_not_miss
+
+# FIX ASSIGNPROJ IN SVDC
+proj4string(postnum_not_miss) <- CRS("+init=epsg:3021")
+
+if(exists("PPN_pro10km")){
+  plot(intersec10km, col = "green")
+  invisible(text(coordinates(intersec10km),
+               labels=as.character(intersec10km@data$POSTALCODE), 
+               cex = 0.8))
+  }else{
+  intersec10km_NM <- postnum_not_miss[buf_sp10,]
+  plot(intersec10km_NM)
+}
+
+if(exists("PPN_pro3km")){
+  plot(intersec3km, col = "yellow", add = TRUE)
+  invisible(text(coordinates(intersec3km),
+               labels = as.character(intersec3km@data$POSTALCODE), 
+               cex = 0.8))
+  }
+
+if(exists("PPN_pro1km")){
+  plot(intersec1km, col = "red", add = TRUE)
+  invisible(text(coordinates(intersec1km),
+               labels=as.character(intersec1km@data$POSTALCODE), 
+               cex = 0.8))
+  }
+
+# plotting postnummer that have no missing coords (makes layout nicer)
+# data(postnummer) is very heavy to plot..
+
+plot(buf_sp10, add = TRUE, lty = 5, lwd = 2)
+plot(buf_sp3, add = TRUE, lty = 3, lwd = 2)
+plot(buf_sp1, add = TRUE, lty = 2, lwd = 2)
+
+if (!all(is.na(over(postnum_not_miss, buf_sp10)))){
+intersec10km_NM <- postnum_not_miss[buf_sp10, ]
+plot(intersec10km_NM, add = TRUE) 
+}
+
+if (!all(is.na(over(postnum_not_miss, buf_sp3)))){
+intersec3km_NM <- postnum_not_miss[buf_sp3, ]
+plot(intersec3km_NM, add = TRUE)
+}
+
+if (!all(is.na(over(postnum_not_miss, buf_sp1)))){
+intersec1km_NM <- postnum_not_miss[buf_sp1, ]
+plot(intersec1km_NM, add = TRUE)
+}
+
+#plot(postnummer, add=TRUE)
+title(expression(paste(" Postnummers intersecting buffer areas of 1, 3 and 10 km radius")))
+```
+
+<br>
+
+#### 9.1 PPNs WHITHIN POSTNUMMERS INTERSECTING 1 KM BUFFER
+
+```{r Missing table1, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+
+if(exists("PPN_pro1km")) {
+
+  ppn_post1 <- unique(PPN_pro1km[c("Postnummer", "Ppn", "Species")])
+  ppn_post1_len <- as.data.frame(table(ppn_post1$Postnummer))
+  ppn_post1 <- split(ppn_post1$Ppn, ppn_post1$Postnummer)
+  
+  ppn_post1 <- unlist(lapply(ppn_post1, function(x) {
+    paste(x, collapse = ", ")
+    }))
+  
+  ppn_post1 <- data.frame(cbind(labels(ppn_post1), ppn_post1),
+                          ppn_post1_len[, 2])
+  
+  colnames(ppn_post1) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
+  
+  kable(ppn_post1, row.names = FALSE)
+
+} else {
+  
+  cat("* **Zip-codes intersecting the buffer of 1 km have no PPNs without missing coordinates**   ")
+
+}
+
+```
+<br>
+
+#### 9.2 PPNs WHITHIN POSTNUMMERS INTERSECTING 3 KM BUFFER
+
+```{r Missing table3, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+
+if(exists("PPN_pro3km")) {
+  ppn_post3 <- unique(PPN_pro3km[c("Postnummer", "Ppn", "Species")])
+  ppn_post3_len <- as.data.frame(table(ppn_post3$Postnummer))
+  ppn_post3 <- split(ppn_post3$Ppn, ppn_post3$Postnummer)
+  
+  ppn_post3 <- unlist(lapply(ppn_post3, function(x) {
+      paste(x, collapse=", ")
+    }))
+  
+  ppn_post3 <- data.frame(cbind(labels(ppn_post3), ppn_post3),
+                          ppn_post3_len[,2] )
+  
+  colnames(ppn_post3) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
+  
+  kable(ppn_post3, row.names=FALSE) 
+
+} else {
+  
+  cat("* **Zip-codes intersecting the buffer of 3 km have no PPNs without missing coordinates**   ")
+  
+}
+
+```
+<br>
+
+
+#### 9.3 PPNs WHITHIN POSTNUMMERS INTERSECTING 10 KM BUFFER
+
+```{r Missing table10, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+
+if(exists("PPN_pro10km")) {
+  
+  ppn_post10 <- unique(PPN_pro10km[c("Postnummer", "Ppn", "Species")])
+  ppn_post10_len <- as.data.frame(table(ppn_post10$Postnummer))
+  ppn_post10 <- split(ppn_post10$Ppn, ppn_post10$Postnummer)
+  
+  ppn_post10 <- unlist(lapply(ppn_post10, function(x) {
+    paste(x, collapse=", ")
+    }))
+  
+  ppn_post10 <- data.frame(cbind(labels(ppn_post10), ppn_post10),
+                           ppn_post10_len[, 2] )
+  
+  colnames(ppn_post10) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
+  
+  kable(ppn_post10, row.names = FALSE)
+
+} else {
+  
+  cat("* **Zip-codes intersecting the buffer of 10 km have no PPNs without missing coordinates**   ")
+  
+}
+
+```
+<br>
+
