@@ -15,9 +15,11 @@
 #' @import leaflet
 #' @import RODBC
 #' @import knitr
+#' @import EpiContactTrace
 #' @import wordcloud
 #' @import DT
 #' @import sp
+#' @import rgeos
 #' @export
 
 report <- function(ppn = 94403,
@@ -33,10 +35,13 @@ report <- function(ppn = 94403,
                    format = c("knitr")) {
 
   ## Check to make sure the environment is empty
+  
   if (length(ls(envir=.svamp_env))) {
     stop('Unable to create report. The report object already exists')
   }
+  
   ## Clean up the environment upon exiting the function
+  
   on.exit(rm(list=ls(envir=.svamp_env), envir=.svamp_env))
 
 #   ## Check arguments
