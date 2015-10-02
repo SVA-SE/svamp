@@ -1,3 +1,14 @@
+---
+title: "DISEASE INVESTIGATION REPORT"
+author: "Author    __SVA - ESS department__"
+date: "Date of creation    __`r toupper(format(Sys.time(), '%B %d, %Y   %H:%M'))`__"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: cosmo
+---
+
 This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         
 
 
@@ -1083,4 +1094,249 @@ if(exists("PPN_pro10km")) {
 
 ```
 <br>
+
+### 10. SYNDROMIC SURVEILLANCE DATA (SVASSS)
+
+Data reported in the following tables are extracted from SVASSS's alarms datasets. In details, information were derived from:
+
+ 1. dataset of clinical data of vet visit to farms;
+ 2. dataset of lab samples submitted to SVA;
+ 3. dataset of animal movements (CDB)
+
+<br>
+
+#### 10.1. SVASSSS DATASET OF CLINICAL RECORDS
+
+Information reported in the table were obtained by matching PPNs lying inside 10 km radius (or within the postnummers if PPN coordinates were missing) with PPNs present in the dataset of clinical records. Data are ordered first by Syndrome then by PPN
+
+<br>
+
+```{r SVASSS CLINICAL, echo=FALSE, results='asis'}
+
+SVASSS.SJV.alarms.data <- report_data_object()$result$SVASSS.SJV.alarms.data
+
+if(exists("PPN_pro1km")) {
+  
+    PPN_pro1km_2 <- PPN_pro1km["Ppn"]
+    
+} else {
+  
+    PPN_pro1km_2 <- data.frame(Ppn = outbreak1@data$Ppn)    
+}
+
+if(exists("PPN_pro3km")) {
+  
+  PPN_pro3km_2 <- PPN_pro3km["Ppn"]
+    
+} else {
+    
+  PPN_pro3km_2 <-  data.frame(Ppn=outbreak1@data$Ppn)
+}
+
+if(exists("PPN_pro10km")) {
+  
+  PPN_pro10km_2 <- PPN_pro10km["Ppn"]
+
+} else {
+  
+  PPN_pro10km_2 <- data.frame(Ppn=outbreak1@data$Ppn)
+}
+
+merge_farm <- data.frame(Ppn = c(farms_in10_RT90@data$Ppn,
+                                 farms_in3_RT90@data$Ppn,
+                                 farms_in1_RT90@data$Ppn,
+                                 outbreak1@data$Ppn))
+
+merge_pro <- data.frame(Ppn = c(PPN_pro1km_2[, 1],
+                                PPN_pro3km_2[, 1],
+                                PPN_pro10km_2[, 1]))
+
+alla <- unique(rbind(merge_farm, merge_pro))
+
+id_SVASSS.SJV <- (SVASSS.SJV.alarms.data$PPN %in% alla$Ppn)
+SVASSS.SJV <- SVASSS.SJV.alarms.data[id_SVASSS.SJV, ]
+
+SVASSS.SJV2 <- SVASSS.SJV[, c(1,3,4,8,18)]
+SVASSS.SJV2 <- unique(SVASSS.SJV2)
+SVASSS.SJV2 <- SVASSS.SJV2[order(SVASSS.SJV2[, 5], 
+                                 SVASSS.SJV2[, 3],
+                                 SVASSS.SJV2[, 1]),]
+
+if(nrow(SVASSS.SJV2) != 0) {
+  
+  colnames(SVASSS.SJV2) <- c("Datum",
+                             "Distriktnamn",
+                             "PPN",
+                             "Djurslag",
+                             "Syndrome")
+
+  datatable(SVASSS.SJV2,
+           options = list(
+                    columnDefs = list(
+                                    list(className = 'dt-center',
+                                         targets = c(0,2,3,4)))
+           ))
+ 
+} else {
+  
+  cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**" )
+
+}
+
+```
+
+<br>
+
+#### 10.2. SVASSS DATASET OF LAB SAMPLES
+
+Information reported in the table were obtained by matching PPNs lying inside 10 km radius (or within the postnummers if PPN coordinates were missing) with PPNs present in the SVASSS dataset of lab sample records. Information about samples not related to a PPN (e.g. environmental samples) were also considered when coordinates were present.    
+
+<br>
+
+```{r  SVASSS LAB, warning=FALSE, message=FALSE, echo = FALSE, results='asis', fig.height=14, fig.width=14}
+
+SVASSS.alarms.data <- report_data_object()$result$SVASSS.alarms.data
+
+colnames(SVASSS.alarms.data)[26] <- "Y"
+colnames(SVASSS.alarms.data)[27] <- "X"
+
+# Yes coords, No PPN
+lab_XY<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$X) |
+                           !is.na(SVASSS.alarms.data$Y) &
+                            is.na(SVASSS.alarms.data$PPN_original),]
+
+coordinates(lab_XY) = cbind(lab_XY$X, lab_XY$Y)
+proj4string(lab_XY) <- CRS("+init=epsg:3021")
+
+#only coordinates inside Swedish borders
+lab_XY_match <- lab_XY[NUTS_03M,]
+
+#only coordinates outside Swedish borders
+lab_XY_nomatch <- lab_XY[!complete.cases(over(lab_XY,NUTS_03M)),]
+
+# For coordinates switching
+# bbox <- lab_XY@bbox
+# bbox <- Polygon(bbox)
+# bbox = Polygons(list(bbox), "bbox")
+# bbox = SpatialPolygons(list(bbox))
+#                       
+# if(any(over(lab_XY, bbox))){
+#   YX_coords <- lab_XY[bbox,]
+#   lab_XY<-lab_XY[lab_XY@data$Ppn %in% YX_coords@data$Ppn]
+# }
+
+# writeOGR(lab_XY, dsn="C:/project/Garbage",layer="lab_XY",driver="ESRI Shapefile",overwrite=T)
+
+# No coords, No PPN
+lab_no_XY_PPN<-SVASSS.alarms.data[is.na(SVASSS.alarms.data$X) &
+                                  is.na(SVASSS.alarms.data$Y) &
+                                  is.na(SVASSS.alarms.data$PPN_original),]
+
+# Those are additional datasets lets see if they are useful later
+# # No coords, Yes PPN 
+# lab_PPN<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$PPN_original) &
+#                              is.na(SVASSS.alarms.data$X) &
+#                              is.na(SVASSS.alarms.data$Y),]
+# 
+# # Yes coords, Yes PPN
+# lab_XY_PPN<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$X) &
+#                            !is.na(SVASSS.alarms.data$Y) &
+#                             !is.na(SVASSS.alarms.data$PPN_original),]
+
+#  Yes PPN with and without coords
+lab_PPN_only <- SVASSS.alarms.data[!is.na(SVASSS.alarms.data$PPN_original), ]
+
+# index PPN in alla (that comprises all PPNs within the buffer or, for those PPNs without coordinates, intersecting postnummers)
+labPPN_alla_i <- lab_PPN_only$PPN %in% alla$PPN
+
+# Uppdrag with PPNs matching PPNs inside the buffers or PPNs (with missing coordinates) into the postnummers intersecting the buffers
+
+lab_PPN_only <- lab_PPN_only [labPPN_alla_i, ]
+
+# Uppdrag without PPN information intersecting the buffers
+
+all_buffers <- spRbind(buf_sp1,buf_sp3)
+all_buffers <- spRbind(all_buffers, buf_sp10)
+
+if(any(!is.na(over(lab_XY_match, all_buffers)))) {
+  
+  lab_XY_match_buf1 <- lab_XY_match[all_buffers, ] 
+}
+
+if(exists("lab_XY_match_buf1")) {
+  
+  SVASSS.lab2 <- rbind(lab_XY_match_buf1@data, lab_PPN_only)
+
+} else {
+  
+  SVASSS.lab2 <- lab_PPN_only
+}
+
+if(nrow(SVASSS.lab2) != 0) {
+
+  SVASSS.lab2 <- SVASSS.lab2[, c(1,3,4,5,9)]
+  SVASSS.lab2 <- unique(SVASSS.lab2)
+  
+  colnames(SVASSS.lab2) <- c("Uppdrag",
+                             "Syndromic",
+                             "Djurslag", 
+                             "Species", 
+                             "PPN")
+  
+  datatable(SVASSS.lab2,
+           options = list(
+                    columnDefs = list(
+                                    list(className = 'dt-center',
+                                         targets = c(0,1,2,3,4)))
+           ))
+} else {
+  
+  cat("* **No SVASSS lab samples are present for the considered PPNs and time frame**" )
+       
+}
+```
+
+<br>
+
+#### 10.3. MISSING/INCORRECT INFORMATION     
+There are __`r length(unique(lab_no_XY_PPN$UPPDRAG))`__ Uppdrag with missing coordinates and without any additional spatial information coming for the dataset lab samples     
+
+There are __`r length(unique(lab_XY_nomatch$UPPDRAG))`__ Uppdrag with coordinates located outside the Swedish borders. Possibly X and Y coordinates are switched in the original dataset.
+
+<br>
+
+### 11. URAX DATA
+
+<br>
+
+```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=TRUE}
+
+
+id_urax <- (urax$PPN %in% alla$Ppn)
+urax_match <- urax[id_urax, ]
+
+if(nrow(urax_match) != 0) {
+  
+  urax_match <- urax_match[, c(4,1,2,3,9,5)]
+  urax_match <- unique(urax_match)
+  colnames(urax_match) = c("PPN",
+                           "\304RENDEID", 
+                           "DATUM", 
+                           "STATUS", 
+                           "AGENS",
+                           "ADRESS")
+  datatable(urax_match,
+           options = list(
+                    columnDefs = list(
+                                    list(className = 'dt-center',
+                                         targets = c(0,1,2,3,4,5)))
+            ))
+     
+} else {
+  
+  cat("* **No URAX data within considered spatial radius and time frame**" )
+
+}
+
+```
 
