@@ -12,7 +12,7 @@ output:
 This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         
 
 
-```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis'}
+```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', eval=TRUE}
 
 farms_RT90 <- report_data_object()$result$farms_RT90
 ppn <- report_data_object()$ppn
@@ -30,51 +30,12 @@ outbreak <- subset(farms_RT90, farms_RT90$Ppn == ppn)
 * The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
 
 
-```{r PlotMap1, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14}
+```{r PlotMappro, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14,eval=TRUE}
 
-NUTS_03M <- report_data_object()$NUTS_03M[
-            report_data_object()$NUTS_03M$STAT_LEVL_ == 3, 1:2]
-NUTS_03M@data$Lan <- report_data_object()$result$nuts_label$Swedish[
-                       match(as.character(NUTS_03M@data$NUTS_ID),
-                             report_data_object()$result$nuts_label$NUTS)]
-
-
-
-# Check for points falling outside Swedish border
-
-if(all(!is.na(over(outbreak, NUTS_03M)))) {
-  
-  lan <- over(outbreak,NUTS_03M)
-  lan <- NUTS_03M[NUTS_03M@data$NUTS_ID == lan$NUTS_ID,]
-  plot(NUTS_03M, axes = T)
-  plot(lan, add = T, col = "yellow")
-
-
-points(outbreak, pch = 19, col = "red", cex = 1)
-
-# Add labels to the polygons
-
-invisible(text(coordinates(NUTS_03M),
-               labels = as.character(NUTS_03M@data$Lan), 
-               cex = 0.8))
-
-title(expression(paste("Geographic location of the PPN under investigation")))
-
-legend("bottomright",
-        cex = 1.3, 
-        "PPN location", 
-        pch = 19, 
-        pt.cex = 1.2,
-        col = "red",
-        bty = "n")
-
-} else {
-   
-  plot(1,1,col = "white")
-  text(1,1,"Provided coordinates fall outside the Swedish borders")
-}
+draw_map(ppn)
 
 ```
+
 
 The PPN is geolocated at the following coordinates:
 
@@ -96,7 +57,6 @@ df <- data.frame("RefSyst" = c("RT90", "WGS84", "SWEREF99"),
 colnames(df) <- c("Reference system", "X coordinate", "Y coordinate")
                  
 kable(df, digits=1, row.names = FALSE)   
-
 
 ```
 
@@ -1196,6 +1156,7 @@ Information reported in the table were obtained by matching PPNs lying inside 10
 ```{r  SVASSS LAB, warning=FALSE, message=FALSE, echo = FALSE, results='asis', fig.height=14, fig.width=14}
 
 SVASSS.alarms.data <- report_data_object()$result$SVASSS.alarms.data
+NUTS_03M <- report_data_object()$NUTS_03M
 
 colnames(SVASSS.alarms.data)[26] <- "Y"
 colnames(SVASSS.alarms.data)[27] <- "X"

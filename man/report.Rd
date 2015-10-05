@@ -9,7 +9,7 @@ report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
   template = "report", format = c("knitr"))
 }
 \arguments{
-\item{ppn}{ppn number (single scalar value)}
+\item{ppn}{Ppn number (single scalar value)}
 
 \item{ppn_obj}{Path to the list of objects output from svdc package}
 
