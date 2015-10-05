@@ -3,12 +3,11 @@
 \alias{svamp}
 \docType{package}
 \title{
-What the package does (short line)
-~~ package title ~~
+SVA mapping application (SVAMP)
 }
 \description{
-More about what it does (maybe more than one line)
-~~ A concise (1-5 lines) description of the package ~~
+Takes a dataset cleaned by the svdc package and produces a map report
+depending on the PPN given to the report function
 }
 \details{
 \tabular{ll}{
@@ -16,26 +15,19 @@ Package: \tab svamp\cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
 Date: \tab 2015-09-07\cr
-License: \tab What license is it under?\cr
+License: \tab Internal SVA code\cr
 }
-~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
-Who wrote it
-
-Maintainer: Who to complain to <yourfault@somewhere.net>
-~~ The author and/or maintainer of the package ~~
+Giampaolo Cocca
 }
 \references{
-~~ Literature or other references for background information ~~
+None
 }
-~~ Optionally other standard keywords, one per line, from file KEYWORDS in the R documentation ~~
-~~ directory ~~
 \keyword{ package }
 \seealso{
-~~ Optional links to other man pages, e.g. ~~
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
+None
 }
 \examples{
-~~ simple examples of the most important functions ~~
+None
 }

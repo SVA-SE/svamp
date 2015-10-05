@@ -36,39 +36,39 @@ report <- function(ppn = 94403,
                    format = c("knitr")) {
 
   ## Check to make sure the environment is empty
-  
+
   if (length(ls(envir=.svamp_env))) {
     stop('Unable to create report. The report object already exists')
   }
-  
+
   ## Clean up the environment upon exiting the function
-  
+
   on.exit(rm(list=ls(envir=.svamp_env), envir=.svamp_env))
 
 #   ## Check arguments
 #   if(missing(ppn))
 #     stop("Missing 'ppn'")
-# 
+#
 #   if(missing(firstname))
 #     stop("Missing 'firstname'")
-# 
+#
 #   if(missing(lastname))
 #     stop("Missing 'lastname'")
-# 
+#
 #   if(missing(template))
 #     stop("Missing 'template'")
-  
+
   # connection via ODBC and query urax data, then close the connection
-  
+
   connect <- odbcConnect("SJUKDOMSSTATUSV",
                          uid = "Svaladw",
                          pwd = "svaladwpw",
                          believeNRows=FALSE)
-  
+
   urax <- sqlQuery(connect, query = " SELECT *
                                     FROM
                                     URAX.SJUKDOMSSTATUSV")
-  
+
   odbcClose(connect)
 
 
@@ -80,7 +80,7 @@ report <- function(ppn = 94403,
 
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
   data(postnummer, package = "svamp", envir = .svamp_env)
-    
+
   ## Add the ppn argument to the .svamp_env so it can be accessed inside the .Rmd
 
   assign("ppn", ppn, envir = .svamp_env)
@@ -95,13 +95,15 @@ report <- function(ppn = 94403,
 
   template <- system.file(file.path(format, paste0(template, ".Rmd")), package = "svamp")
 
-  outputfile_html <- rmarkdown::render(template)
-
-  #return(readLines(outputfile_html))
-
   td <- tempdir()
-  a <- normalizePath(file.path(outputfile_html), winslash = "/")
-  return(a)
+
+  outputfile_html <- rmarkdown::render(template, output_dir = td)
+
+  return(readLines(outputfile_html))
+
+
+  #a <- normalizePath(file.path(outputfile_html), winslash = "/")
+  #return(a)
 
 }
 
