@@ -87,10 +87,10 @@ draw_map <- function(ppn,
 #' @import maptools
 #' @export
 
-report <- function(ppn = 94403,
+report <- function(ppn = "94403",
                    ppn_obj = system.file("extdata/result.rda", package = "svamp"),
-                   firstname = "Giampaolo",
-                   lastname = "Cocca",
+                   firstname = "",
+                   lastname = "",
 #                    X = 1491350,
 #                    Y = 7160041,
 #                    buf1 = 1000,
@@ -99,7 +99,8 @@ report <- function(ppn = 94403,
                    template = "report",
                    format = c("knitr")) {
 
-  ## Check to make sure the environment is empty
+    
+   ## Check to make sure the environment is empty
 
   if (length(ls(envir=.svamp_env))) {
     stop('Unable to create report. The report object already exists')
@@ -109,16 +110,12 @@ report <- function(ppn = 94403,
 
   on.exit(rm(list=ls(envir=.svamp_env), envir=.svamp_env))
 
-#   ## Check arguments
-#   if(missing(ppn))
-#     stop("Missing 'ppn'")
-#
 #   if(missing(firstname))
 #     stop("Missing 'firstname'")
-#
+# 
 #   if(missing(lastname))
 #     stop("Missing 'lastname'")
-#
+# 
 #   if(missing(template))
 #     stop("Missing 'template'")
 
@@ -137,9 +134,24 @@ report <- function(ppn = 94403,
 
 
   ## Load the output of svsc package (load a list called "result" output of svdc package)
-
   load(ppn_obj)
+  
+  ## Check arguments
+  if(missing(ppn)) {
+    stop("'ppn' is missing")
+  }
 
+  ## Check that the inputed ppn is numeric
+  if(!is.numeric(ppn)) {
+    stop("Only numeric value are admitted")
+  }
+  
+  ## Check that the inputed ppns are present
+  if (!all(ppn %in% result$PPN$Ppn)) {
+    stop('One or more PPNs are not present in the database.
+         Please, double check the imputed PPNs')
+  }
+  
   ## Load spatialpolygondataframe sticked in the ../svamp/data folder
 
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
@@ -163,11 +175,11 @@ report <- function(ppn = 94403,
 
   outputfile_html <- rmarkdown::render(template, output_dir = td)
 
-  return(readLines(outputfile_html))
+  #return(readLines(outputfile_html))
 
 
-  #a <- normalizePath(file.path(outputfile_html), winslash = "/")
-  #return(a)
+  a <- normalizePath(file.path(outputfile_html), winslash = "/")
+  return(a)
 
 }
 

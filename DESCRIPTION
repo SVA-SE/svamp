@@ -13,7 +13,16 @@ Type: Package
 LazyLoad: yes
 Imports:
     markdown,
-    knitr
+    knitr,
+    DT,
+    EpiContactTrace,
+    RODBC,
+    leaflet,
+    maptools,
+    rgeos,
+    rmarkdown,
+    sp,
+    wordcloud
 Depends:
     R(>= 3.0.0)
 Collate:

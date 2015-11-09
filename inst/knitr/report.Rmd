@@ -30,12 +30,11 @@ outbreak <- subset(farms_RT90, farms_RT90$Ppn == ppn)
 * The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
 
 
-```{r PlotMappro, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14,eval=TRUE}
+```{r PlotMappro, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14,eval=FALSE}
 
 draw_map(ppn)
 
 ```
-
 
 The PPN is geolocated at the following coordinates:
 
@@ -44,7 +43,9 @@ The PPN is geolocated at the following coordinates:
 outbreak_WGS84 <- spTransform(outbreak, CRS("+init=epsg:4326"))
 outbreak_SWEREF99 <- spTransform(outbreak_WGS84, CRS("+init=epsg:3006"))
 
-df <- data.frame("RefSyst" = c("RT90", "WGS84", "SWEREF99"),
+df <- data.frame("PPN" = outbreak$Ppn,
+                  
+                 "RefSyst" = c("RT90", "WGS84", "SWEREF99"),
                  
                  "X" = c(as.integer(outbreak@coords[,1]),
                          outbreak_WGS84@coords[,1], 
@@ -53,8 +54,8 @@ df <- data.frame("RefSyst" = c("RT90", "WGS84", "SWEREF99"),
                  "Y" = c(as.integer(outbreak@coords[,2]),
                          outbreak_WGS84@coords[,2],
                          outbreak_SWEREF99@coords[,2]))
-
-colnames(df) <- c("Reference system", "X coordinate", "Y coordinate")
+df <- df[order(df$PPN),]
+colnames(df) <- c("PPN", "Reference system", "X coordinate", "Y coordinate")
                  
 kable(df, digits=1, row.names = FALSE)   
 
@@ -67,15 +68,18 @@ kable(df, digits=1, row.names = FALSE)
 
 outbreak1 <- outbreak[ , c(1, 4, 8, 11, 41)]
 outbreak1_wgs <- spTransform(outbreak1, CRS("+init=epsg:4326"))
-pop_out <- paste(outbreak1_wgs@data)
+pop_out <- paste0("PPN: ", outbreak1_wgs@data$Ppn, "<br>",
+                  "Species: ", outbreak1_wgs@data[5], "<br>",
+                  "Address: ", outbreak1_wgs@data[3])
 
 LeafletMap1 <- leaflet(outbreak1_wgs) %>% addProviderTiles("CartoDB.Positron")
 
-LeafletMap1 %>% addCircleMarkers(stroke = FALSE,
-                                 fill = TRUE, 
-                                 fillColor = "black",
-                                 fillOpacity = 1,
-                                 popup = pop_out)
+LeafletMap1 %>% addCircles(data = outbreak1_wgs,
+                           stroke = FALSE,
+                           fill = TRUE,
+                           fillColor = "red",
+                           fillOpacity = 1,
+                           popup = pop_out)
 ```
 
 ****
@@ -98,8 +102,10 @@ counts <- table(outb.in.PPN$Typ)
 
 # Draw the graph with herds/animals count for the outbreak
 
-par(mfrow = c(1,2), mar=c(5.1, 4.8, 4.1, 2.1), 
-    mgp=c(3.8, 1, 0), las=2)
+par(mfrow = c(1,2), 
+    mar=c(5.1, 4.8, 4.1, 2.1), 
+    mgp=c(3.8, 1, 0), 
+    las=2)
 
 width = ifelse(length(counts) == 1, 0.2, 0.8) #avoid big bar drawing when length=1
 
@@ -220,6 +226,7 @@ y <- coordinates(outbreak)[, 2] # Outbreak coord y
 # So far working for 1 ppn per time
 stopifnot(length(x) == 1 & length(y) == 1)
 
+
 # Buffer. Draw a circle with 1 km radius
 nr = 500 # n. of points
 r = 1000 #input$buf1 # radius
@@ -269,7 +276,7 @@ if(all(is.na(over(farms_RT90, buf_sp10)))) {
   
 } else {
   
-  farms_in10_RT90 <- farms_RT90[buf_sp10, c(1,4,8,11,41)]
+ farms_in10_RT90 <- farms_RT90[buf_sp10, c(1,4,8,11,41)]
 }
 
 if(all(is.na(over(farms_RT90, buf_sp3)))) {
@@ -296,9 +303,9 @@ if(sum(!is.na(over(farms_RT90, buf_sp1))) == 0 |
 
 ```{r PlotMap2, fig.width=14, fig.height=14, echo=FALSE, warning=FALSE, message=FALSE}
 
-plot(buf_sp10, axes = T, col = rgb(0,1,0, alpha = 0.3), lty=5, lwd = 2)
-plot(buf_sp3, add = T, col = rgb(1,1,0, alpha = 0.3), lty=3, lwd = 2)
-plot(buf_sp1, add = T, col = rgb(1,0,0, alpha = 0.3), lty = 2, lwd = 2)
+plot(buf_sp10, axes = T, col = rgb(0,1,0, alpha = 1), lty=5, lwd = 2)
+plot(buf_sp3, add = T, col = rgb(1,1,0, alpha = 1), lty=3, lwd = 2)
+plot(buf_sp1, add = T, col = rgb(1,0,0, alpha = 1), lwd = 2)
 plot(outbreak, add = T, col = "black", pch = 19, cex = 1)
 
 if(!identical(farms_in10_RT90, outbreak1)) {
@@ -418,18 +425,18 @@ LeafletMap2 <- leaflet() %>% addProviderTiles("CartoDB.Positron")
 
 LeafletMap2 %>%
   
-  addCircleMarkers(data = farms_in10_84,
-                   stroke = FALSE,
+  addCircles(data = farms_in10_84,
+                   stroke = TRUE,
                    fill = TRUE,
                    fillColor = "green") %>%
   
-  addCircleMarkers(data = farms_in3_84,
-                   stroke = FALSE,
+  addCircles(data = farms_in3_84,
+                   stroke = TRUE,
                    fill = TRUE,
                    fillColor = "yellow") %>%
   
-  addCircleMarkers(data = farms_in1_84,
-                   stroke = FALSE,
+  addCircles(data = farms_in1_84,
+                   stroke = TRUE,
                    fill = TRUE,
                    fillColor = "red") %>%
 
@@ -438,7 +445,7 @@ LeafletMap2 %>%
   addPolygons(data = buf_spdf3_84, color = "yellow", fill = "yellow") %>%
   addPolygons(data = buf_spdf1_84, color = "red", fill = "red") %>%
 
-  addCircleMarkers(data = outbreak2,
+  addCircles(data = outbreak2,
                    stroke = FALSE,
                    fill = TRUE,
                    fillColor = "black",
@@ -743,14 +750,20 @@ if(!identical(farms_in1_RT90, outbreak1)) {
 # Table
 anim1_DT <- anim1[, c(1,2,11,14,19,26,43)]
   
-datatable(anim1_DT,
-          options = list(
-            columnDefs = list(
-              list(className = 'dt-center',
-                   targets = c(0,1,4,5,6))
-              )
-            )
-          )  %>% formatRound('distans(m)', 0)
+  datatable(anim1_DT,  extensions = 'TableTools',
+           options = list(
+                    columnDefs = list(
+                                    list(className = 'dt-center',
+                                         targets = c(0,1,4,5,6))),
+                    dom = 'T<"clear">ftip', pageLength = dim(quakes)[1],
+                                    tableTools = list(
+                                      sSwfPath = copySWF(),
+                                      aButtons = list( list(
+                                        sExtends = 'collection',
+                                        sButtonText = 'Save',
+                                        aButtons = c('csv', 'xls')
+                                      )))
+                    ))  %>% formatRound('distans(m)', 0)
 
 } else {
   
@@ -833,6 +846,7 @@ if(!identical(farms_in10_RT90, outbreak1)){
 
 The analysis covers the last __90__ days from the date of report generation (__`r Sys.Date()`__).   
 The most recent movements reported into the database are from __`r unique(max(report_data_object()$result$ani_move$t))`__.    
+Run your own contact analysis setting different parameters (click the [link](http://ubuntu1:3838/sample-apps/trace))    
 
 <br>
 
@@ -864,9 +878,6 @@ show(contactTrace)
 ```{r Missing,results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
 postnum_miss <- report_data_object()$result$postnum_miss
-
-# FIX ASSIGNPROJ IN SVDC
-proj4string(postnum_miss) <- CRS("+init=epsg:3021")
 
 PPN_na <- report_data_object()$result$PPN_na
 
@@ -909,9 +920,6 @@ Note that generally the total number of PPNs for 10 km radius comprises PPNs alr
 ```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE}
 
 postnum_not_miss <- report_data_object()$result$postnum_not_miss
-
-# FIX ASSIGNPROJ IN SVDC
-proj4string(postnum_not_miss) <- CRS("+init=epsg:3021")
 
 if(exists("PPN_pro10km")){
   plot(intersec10km, col = "green")
@@ -1113,9 +1121,13 @@ merge_pro <- data.frame(Ppn = c(PPN_pro1km_2[, 1],
 
 alla <- unique(rbind(merge_farm, merge_pro))
 
-id_SVASSS.SJV <- (SVASSS.SJV.alarms.data$PPN %in% alla$Ppn)
-SVASSS.SJV <- SVASSS.SJV.alarms.data[id_SVASSS.SJV, ]
+SVASSS.SJV <- SVASSS.SJV.alarms.data[SVASSS.SJV.alarms.data$PPN %in% alla$Ppn, ]
 
+# dates.svala <- as.Date(svala.data$ANKOMSTDATUM, format = "%d/%m/%Y", origin="01/01/1970")
+# svala.data <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]),]
+# svala.active <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]&svala.data$active2==1),]
+# svala.passive <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]&svala.data$active2==0),]
+    
 SVASSS.SJV2 <- SVASSS.SJV[, c(1,3,4,8,18)]
 SVASSS.SJV2 <- unique(SVASSS.SJV2)
 SVASSS.SJV2 <- SVASSS.SJV2[order(SVASSS.SJV2[, 5], 
@@ -1147,7 +1159,7 @@ if(nrow(SVASSS.SJV2) != 0) {
 
 <br>
 
-#### 10.2. SVASSS DATASET OF LAB SAMPLES
+#### 10.2. DATASET OF LAB SAMPLES (SVALA)
 
 Information reported in the table were obtained by matching PPNs lying inside 10 km radius (or within the postnummers if PPN coordinates were missing) with PPNs present in the SVASSS dataset of lab sample records. Information about samples not related to a PPN (e.g. environmental samples) were also considered when coordinates were present.    
 
@@ -1270,7 +1282,7 @@ There are __`r length(unique(lab_XY_nomatch$UPPDRAG))`__ Uppdrag with coordinate
 
 <br>
 
-```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=TRUE}
+```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=FALSE}
 
 
 id_urax <- (urax$PPN %in% alla$Ppn)
