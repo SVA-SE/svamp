@@ -121,16 +121,16 @@ report <- function(ppn = "94403",
 
   # connection via ODBC and query urax data, then close the connection
 
-  connect <- odbcConnect("SJUKDOMSSTATUSV",
-                         uid = "Svaladw",
-                         pwd = "svaladwpw",
-                         believeNRows=FALSE)
-
-  urax <- sqlQuery(connect, query = " SELECT *
-                                    FROM
-                                    URAX.SJUKDOMSSTATUSV")
-
-  odbcClose(connect)
+#   connect <- odbcConnect("SJUKDOMSSTATUSV",
+#                          uid = "Svaladw",
+#                          pwd = "svaladwpw",
+#                          believeNRows=FALSE)
+# 
+#   urax <- sqlQuery(connect, query = " SELECT *
+#                                     FROM
+#                                     URAX.SJUKDOMSSTATUSV")
+# 
+#   odbcClose(connect)
 
 
   ## Load the output of svsc package (load a list called "result" output of svdc package)
