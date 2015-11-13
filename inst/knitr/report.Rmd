@@ -879,14 +879,14 @@ show(contactTrace)
 
 postnum_miss <- report_data_object()$result$postnum_miss
 
-PPN_na <- report_data_object()$result$PPN_na
+PPN_is.na <- report_data_object()$result$PPN_is.na
 
 if (!all(is.na(over(postnum_miss, buf_sp1)))) {
   
   intersec1km <- postnum_miss[buf_sp1, ]
  
   # match postnummer with postnummer of PPN is.na
-    PPN_pro1km <- PPN_na[PPN_na$Postnummer %in% 
+    PPN_pro1km <- PPN_is.na[PPN_is.na$Postnummer %in% 
                           intersec1km@data$POSTALCODE, ]
 }
 
@@ -894,7 +894,7 @@ if (!all(is.na(over(postnum_miss, buf_sp3)))) {
   
   intersec3km <- postnum_miss[buf_sp3, ]
   
-  PPN_pro3km <- PPN_na[PPN_na$Postnummer %in% 
+  PPN_pro3km <- PPN_is.na[PPN_is.na$Postnummer %in% 
                           intersec3km@data$POSTALCODE, ]
 }
 
@@ -902,7 +902,7 @@ if (!all(is.na(over(postnum_miss, buf_sp10)))) {
   
   intersec10km <- postnum_miss[buf_sp10, ]
   
-  PPN_pro10km <- PPN_na[PPN_na$Postnummer %in% 
+  PPN_pro10km <- PPN_is.na[PPN_is.na$Postnummer %in% 
                           intersec10km@data$POSTALCODE, ]
    
 }

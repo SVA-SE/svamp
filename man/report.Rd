@@ -4,7 +4,7 @@
 \alias{report}
 \title{Produce an .html report}
 \usage{
-report(ppn = "94403", ppn_obj = system.file("extdata/result.rda", package =
+report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
   "svamp"), firstname = "", lastname = "", template = "report",
   format = c("knitr"))
 }

@@ -7,9 +7,6 @@
 draw_map <- function(ppn, 
                      ppn_obj = system.file("extdata/result.rda",
                                            package = "svamp")) {
-#   if(exists(ppn)){
-#     stop("No ppn number provided")
-#   } 
   
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
   NUTS_03M <- report_data_object()$NUTS_03M
@@ -87,8 +84,8 @@ draw_map <- function(ppn,
 #' @import maptools
 #' @export
 
-report <- function(ppn = "94403",
-                   ppn_obj = system.file("extdata/result.rda", package = "svamp"),
+report <- function(ppn = 94403,
+                   ppn_obj = system.file("extdata/result.rda", package = "svamp"), #save inUBUNTU the result from SVDC
                    firstname = "",
                    lastname = "",
 #                    X = 1491350,
@@ -175,7 +172,7 @@ report <- function(ppn = "94403",
 
   outputfile_html <- rmarkdown::render(template, output_dir = td)
 
-  #return(readLines(outputfile_html))
+#  return(readLines(outputfile_html))
 
 
   a <- normalizePath(file.path(outputfile_html), winslash = "/")
