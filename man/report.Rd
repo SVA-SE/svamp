@@ -5,11 +5,11 @@
 \title{Produce an .html report}
 \usage{
 report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
-  "svamp"), firstname = "", lastname = "", template = "report",
-  format = c("knitr"))
+  "svamp"), firstname = "", lastname = "", buffer_size = 1,
+  template = "report", format = c("knitr"))
 }
 \arguments{
-\item{ppn}{Ppn number (single scalar value)}
+\item{ppn}{Ppn numbers (vector of int numbers, comma separeted)}
 
 \item{ppn_obj}{Path to the list of objects output from svdc package}
 
@@ -17,15 +17,11 @@ report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
 
 \item{lastname}{Lastname of the person running the report}
 
+\item{buffer_size}{Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)}
+
 \item{X}{X-coordinate of the outbreak provided by the user when ppn coordinates are missing}
 
 \item{Y}{Y-coordinate of the outbreak provided by the user when ppn coordinates are missing}
-
-\item{buf1}{Size in meters of the first buffer drawn around the ppn}
-
-\item{buf2}{Size in meters of the second buffer drawn around the ppn}
-
-\item{buf3}{Size in meters of the third buffer drawn around the ppn}
 }
 \value{
 An html report

@@ -4,489 +4,420 @@ author: "Author    __SVA - ESS department__"
 date: "Date of creation    __`r toupper(format(Sys.time(), '%B %d, %Y   %H:%M'))`__"
 output:
   html_document:
-    toc: true
-    toc_depth: 4
+    fig_caption: yes
     theme: cosmo
+    toc: yes
+    toc_depth: 5
 ---
 
-This report was requested by __`r paste(as.character(toupper(report_data_object()$firstname)), toupper(as.character(report_data_object()$lastname)), sep = " ")`__ to investigate the PPN n. __`r unique(as.character(report_data_object()$ppn))`__         
-
-
-```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', eval=TRUE}
+```{r Outbreak, warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
 
 farms_RT90 <- report_data_object()$result$farms_RT90
 ppn <- report_data_object()$ppn
 
-outbreak <- subset(farms_RT90, farms_RT90$Ppn == ppn)
+outbreak <- farms_RT90[farms_RT90@data$Ppn %in% ppn,]
+
+if(any(!ppn %in% farms_RT90@data$Ppn)) {
+  
+ paste ("WARNING: PPNs", c(ppn[!ppn %in% farms_RT90@data$Ppn]), "have no coordinates.They will be excluded from this report. Run a separate report providing coordinates for the above mentioned PPNs")
+
+}
+
+if(all(!farms_RT90@data$Ppn %in% ppn)) { # copy this error message in report.R
+  
+  stop ("WARNING: All provided PPNs have no coordinates. Run a separate report providing coordinates for invesitgated PPNs")
+
+}
 
 ```
-
+<br>
 <br>
 
-### 1. GEOGRAPHIC LOCATION
-
-* The PPN under investigation is located in __`r toupper(paste(outbreak@data$Lan))`__ within the municipality of __`r toupper(paste(outbreak@data$Kommun))`__ 
-
-* The address of the PPN is __`r toupper(paste(outbreak@data$Adress,",", outbreak@data$Postnummer, "", outbreak@data$Kommun))`__
-
-
-```{r PlotMappro, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis', fig.height = 14, fig.width = 14,eval=FALSE}
-
-draw_map(ppn)
-
-```
-
-The PPN is geolocated at the following coordinates:
-
-```{r Coordinates, warning = FALSE, message = FALSE, echo = FALSE}
-
-outbreak_WGS84 <- spTransform(outbreak, CRS("+init=epsg:4326"))
-outbreak_SWEREF99 <- spTransform(outbreak_WGS84, CRS("+init=epsg:3006"))
-
-df <- data.frame("PPN" = outbreak$Ppn,
-                  
-                 "RefSyst" = c("RT90", "WGS84", "SWEREF99"),
-                 
-                 "X" = c(as.integer(outbreak@coords[,1]),
-                         outbreak_WGS84@coords[,1], 
-                         outbreak_SWEREF99@coords[,1]),
-                 
-                 "Y" = c(as.integer(outbreak@coords[,2]),
-                         outbreak_WGS84@coords[,2],
-                         outbreak_SWEREF99@coords[,2]))
-df <- df[order(df$PPN),]
-colnames(df) <- c("PPN", "Reference system", "X coordinate", "Y coordinate")
-                 
-kable(df, digits=1, row.names = FALSE)   
-
-```
-
-****
+### 1. **GEOGRAPHIC LOCATION**
 <br>
 
-```{r LeafletMap1, warning=FALSE, message=FALSE, echo = FALSE, fig.align='center',fig.width=8}
+#### 1.1 **ADDRESS**
+<br>
+```{r Addresses, warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
 
-outbreak1 <- outbreak[ , c(1, 4, 8, 11, 41)]
+location <- data.frame("PPN " = as.factor(outbreak@data$Ppn),
+                       "Lan" = toupper(outbreak@data$Lan),
+                       "Kommun" = toupper(outbreak@data$Kommun),
+                       "Adress" = toupper(outbreak@data$Adress),
+                       "Postadr." = toupper(outbreak@data$Postadress),
+                       "Postnr." = toupper(outbreak@data$Postnummer),
+                       "Fastighetsbet." = toupper(outbreak@data$Fastighetsbeteckning))
+
+location <- unique(location)
+
+datatable(location, rownames = FALSE,  filter='top')
+
+```
+<br>
+
+#### 1.2 **OUTBREAKS MAP** with PPNs under investigation
+<br>
+```{r LeafletMap1, warning=FALSE, message=FALSE, echo = FALSE, fig.align='center',fig.width=9.5, fig.height=7, results='asis'}
+
+outbreak1 <- outbreak[ , c("Ppn", "Species", "Kommun")] # change indices
+
 outbreak1_wgs <- spTransform(outbreak1, CRS("+init=epsg:4326"))
-pop_out <- paste0("PPN: ", outbreak1_wgs@data$Ppn, "<br>",
-                  "Species: ", outbreak1_wgs@data[5], "<br>",
-                  "Address: ", outbreak1_wgs@data[3])
+pop_out <- paste0("<b>", "PPN: ", "</b>", outbreak1_wgs@data$Ppn, "<br>",
+                  "<b>", "Djurslag: ","</b>", outbreak1_wgs@data$Species, "<br>",
+                  "<b>", "Kommun: ", "</b>", outbreak1_wgs@data$Kommun)
 
-LeafletMap1 <- leaflet(outbreak1_wgs) %>% addProviderTiles("CartoDB.Positron")
+box <- as.vector(outbreak1_wgs@bbox)
 
-LeafletMap1 %>% addCircles(data = outbreak1_wgs,
-                           stroke = FALSE,
-                           fill = TRUE,
-                           fillColor = "red",
-                           fillOpacity = 1,
-                           popup = pop_out)
+LeafletMap1 <- leaflet(outbreak1_wgs) %>% addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  fitBounds(box[1], box[2], box[3], box[4])  
+
+LeafletMap1 %>% addCircleMarkers(data = outbreak1_wgs,
+                                 radius = 5,
+                                 stroke = TRUE,
+                                 color = "black",
+                                 weight = 2,
+                                 fillColor = "red",
+                                 fillOpacity = 1,
+                                 popup = pop_out,
+                                 group = "Outbreak")  %>%
+
+addLayersControl(
+    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+    overlayGroups = "Outbreak",
+    options = layersControlOptions(collapsed = FALSE)) %>%
+
+addLegend("bottomright",
+          values = outbreak1_wgs@data$Ppn,
+          colors = "red",
+          labels = "Investigated PPNs",
+          opacity = 1)
+
 ```
-
-****
+<br>
 <br>
 
-### 2. NUMBER OF HERDS AND ANIMALS (for the investigated PPN)
-
-```{r herds/anim_outbreak, results='asis', fig.height=4, fig.width=12, echo=FALSE}
+### 2. **OWNERS INFORMATION**
+<br>
+```{r Match_Owners, results='asis', echo=FALSE}
 
 PPN <- report_data_object()$result$PPN
 
-outb.in.PPN <-  PPN[which(PPN$Ppn %in% outbreak@data$Ppn), ]
+outbreak_no_sp <- PPN[PPN$Ppn %in% ppn,]
+owners <- length(unique(outbreak_no_sp$Namn))
 
-outb.in.PPN <- outb.in.PPN[!duplicated(outb.in.PPN [c("Ppn",
-                                                      "Adress",
+```
+
+The number of owners/reference persons for the PPNs under investigation is:  **`r owners`**
+
+```{r OwnersData, results='asis', echo=FALSE}
+
+outbreak_own <- outbreak_no_sp
+
+outbreak_own <- outbreak_own[c("Ppn", 
+                                "Namn", 
+                                "Adress.1",
+                                "Postadress.1",
+                                "Telefonnummer.1",
+                                "Mobilnummer",
+                                "Typ.2",
+                                "Epost")]
+
+colnames(outbreak_own) <- c("Ppn.",
+                            "Namn",
+                            "Adress.",
+                            "Postadr.",
+                            "Telefonnum.",
+                            "Mobilnum.",
+                            "Typ.",
+                            "Epost")
+
+
+outbreak_own <- unique(outbreak_own[,c("Ppn.",
+                                       "Namn",
+                                       "Adress.",
+                                       "Postadr.", 
+                                       "Telefonnum.",
+                                       "Mobilnum.",
+                                       "Epost",
+                                       "Typ.")])
+
+col_names <- names(outbreak_own)
+outbreak_own[, col_names] <- lapply(outbreak_own[, col_names] , factor)
+
+datatable(outbreak_own, filter='top', rownames =FALSE, 
+          escape = FALSE, options = list(pageLength = 3))
+```
+<br>
+<br>
+
+### 3. **NUMBER OF HERDS AND ANIMALS** (for the investigated PPN)
+<br>
+```{r herds/anim_outbreak, results='asis', fig.height= 4, fig.width=12, echo=FALSE}
+
+
+outb_in_PPN <-  PPN[PPN$Ppn %in% outbreak@data$Ppn, ]
+
+outb_in_PPN2 <- outb_in_PPN [c("Ppn",
+                              "Species",
+                              "Typ",
+                              "Typ.1",
+                              "tot_anim")]
+
+outb_in_PPN <- outb_in_PPN[!duplicated(outb_in_PPN [c("Ppn",
+                                                      "Species",
                                                       "Typ",
                                                       "Typ.1",
                                                       "tot_anim")]),]
-counts <- table(outb.in.PPN$Typ)
+
+outb_in_PPN$Ppn <- as.factor(outb_in_PPN$Ppn)
+
+outb_in_PPN <- split(outb_in_PPN,
+                     factor(outb_in_PPN$Ppn, levels=rev(levels(outb_in_PPN$Ppn))),
+                     drop = TRUE)
+
+plot_herds <- function(outb_in_PPN) {
+
+  counts <- table(outb_in_PPN$Typ)
 
 # Draw the graph with herds/animals count for the outbreak
 
-par(mfrow = c(1,2), 
-    mar=c(5.1, 4.8, 4.1, 2.1), 
-    mgp=c(3.8, 1, 0), 
-    las=2)
+  par(mfrow = c(1,2), 
+      mar=c(5.8, 4.8, 4.1, 2.1), 
+      mgp=c(3.8, 1, 0), 
+      las=2)
 
-width = ifelse(length(counts) == 1, 0.2, 0.8) #avoid big bar drawing when length=1
+  width = ifelse(length(counts) == 1, 0.2, 0.8) #avoid big bar drawing when length=1
 
-b1a <- barplot(counts,
-               main = "Number of herds by species", 
-               ylab = "Number of herds", 
-               xlim = c(0, length(counts)),
-               ylim = c(0, max(counts * 1.4)),
-               width = width)
+  b1a <- barplot(counts,
+                 main = paste0("Number of herds by species (PPN ",
+                                  unique(outb_in_PPN$Ppn),")"),
+                 ylab = "Number of herds",
+                 xlim = c(0, length(counts)),
+                 ylim = c(0, max(counts * 1.4)),
+                 width = width)
 
-text(x = b1a, y = counts, label = counts, 
-     pos = 3, cex = 0.8, col = "black")
+  text(x = b1a, y = counts, label = counts,
+       pos = 3, cex = 0.8, col = "black")
 
-if (all(is.na(outb.in.PPN$tot_anim))) {
-
+  if (all(is.na(outb_in_PPN$tot_anim))) {
+    
     counts2 <- 0
 
-    b1b <- barplot(counts2, 
-               main = "Number of animals by species", 
-               xaxt = "n", 
-               xlab = "", 
-               ylab = "", 
-               col = "white", 
-               border = NA, 
-               sub =  "Number of animals is NA. See Excel file for details")
+    b1b <- barplot(counts2,
+                   main = paste0("Number of animal by species (PPN ",
+                                  unique(outb_in_PPN$Ppn),")"),
+                   axes = FALSE,
+                   xaxt = "n",
+                   xlab = "",
+                   ylab = "",
+                   col = "white",
+                   border = NA,
+                   sub =  "Number of animals is NA for this PPN. See table below")
 
-} else {
+  } else {
 
-    outb.in.PPN <- outb.in.PPN [!is.na(outb.in.PPN$tot_anim),]
+    outb_in_PPN <- outb_in_PPN [!is.na(outb_in_PPN$tot_anim),]
 
-    counts2 <-tapply(outb.in.PPN$tot_anim, 
-                     INDEX = outb.in.PPN$Typ, 
+    counts2 <-tapply(outb_in_PPN$tot_anim, 
+                     INDEX = outb_in_PPN$Typ, 
                      FUN = sum)
     
     width = ifelse(length(counts2) == 1, 0.2, 0.8)
 
-    b1b <- barplot(counts2, 
-               main = "Number of animals by species",
-               ylab = "Number of animals", 
-               ylim = c(0, max(counts2 * 1.4)),
-               xlim = c(0, length(counts2)),
-               width = width)
+    b1b <- barplot(counts2,
+                   main = paste0("Number of animal by species (PPN ",
+                                  unique(outb_in_PPN$Ppn),")"), 
+                   ylab = "Number of animals",
+                   ylim = c(0, max(counts2 * 1.4)),
+                   xlim = c(0, length(counts2)),
+                   width = width)
 
     text(x = b1b, y = counts2, label = counts2,
          pos = 3, cex = 0.8, col = "black")
+    
+  }
 }
 
+invisible(lapply(outb_in_PPN, plot_herds))
 ```
-
-****
 <br>
 
-### 3. OWNERS INFORMATION
+```{r NA herds/anim_outbreak, results='asis', echo=FALSE}
 
-```{r Match_Owners, results='asis', echo=FALSE}
-
-index <- match(PPN$Ppn, outbreak@data$Ppn)
-outbreak_own <- PPN[which(PPN$Ppn == outbreak@data$Ppn), ]
-owners <- length(unique(outbreak_own$Namn))
-
+if (any(is.na(outbreak_no_sp$tot_anim))) {
+      
+      cat("<br>", "<br>", "**OBS. Some information about number of animals are missing (blank or NA).
+          Check the table below for complete information**", "<br>", "<br>")
+      
+      col_names <- names(outb_in_PPN2)
+      outb_in_PPN2[, col_names] <- lapply(outb_in_PPN2[, col_names] , factor)
+                                 
+                                 datatable(outb_in_PPN2, filter='top', rownames =FALSE, 
+                                           escape = FALSE, options = list(pageLength = 3))
+      }
 ```
-
-The number of owners/reference persons for the PPN under investigation is: __`r owners`__
-
-```{r OwnersData, results='asis', echo=FALSE}
-
-colnames(outbreak_own)[c(33, 36, 37, 31)] <- c("Adress",
-                                               "Postadress",
-                                               "Telefonnummer",
-                                               "Typ")
-
-kable(unique(outbreak_own[,c(32, 33, 36, 37, 38, 39, 31)]),
-      align = 'c', row.names = FALSE)
-
-```
-
-****
+<br>
 <br>
 
-### 4. VETERINARY DISTRICTS INFORMATION
-
-The 3 most closest veterinary districts (euclidean distance) from the investigated PPN position are: 
+### 4. **VETERINARY DISTRICTS INFORMATION**
+<br>
 
 ```{r VetDistrictDist, warning=FALSE, message=FALSE, echo = FALSE, results='asis'}
 
 district_geo_RT90 <- report_data_object()$result$district_geo_RT90
 
 # calculate euclidean distance from outbreak to vet disctrict
-dist_vet <- spDistsN1(district_geo_RT90, outbreak, longlat = FALSE)/ 1000
-dist_vet <- round(dist_vet, 3)
-dist_vet <- cbind(district_geo_RT90@data[ , 2:6], dist_vet)
-dist_vet <- dist_vet[order(dist_vet[, 6]), ]
+dist_vet <- sapply(1:nrow(outbreak), function(i)
+                spDistsN1(as.matrix(district_geo_RT90@coords),
+                          as.matrix(outbreak@coords[i, 1:2]), 
+                          longlat=F)/1000)
 
-# show only the three most closest
-kable(head(dist_vet, 3), align = 'c', digits = 1, row.names = FALSE)
+dist_vet <- round(dist_vet, 0)
+colnames(dist_vet) <- as.character(outbreak@data$Ppn)
+dist_vet <- as.data.frame(dist_vet)
+
+vet_list <- list()
+for (i in 1:ncol(dist_vet)) {
+vet_list[[i]] <- cbind(dist_vet[,i], district_geo_RT90@data[, 2:6])
+names(vet_list[[i]]) <- c("Distans", names(district_geo_RT90@data[, 2:6]))
+names(vet_list) <- names(dist_vet)[1:i]
+}
+
+for (i in 1:length(vet_list)) {
+  vet_list[[i]] <- vet_list[[i]][order(vet_list[[i]][1]),]
+}
+
+out = NULL
+for (j in 1:length(vet_list)) {
+g <- paste("<br>", "<br>", "**Veterinary districts most closest to PPN** ", names(vet_list[j]), "<br>", "<br>")
+  knit_expanded <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(vet_list[[", j, "]],
+                          filter='top', rownames =FALSE, escape = FALSE, options = list(pageLength = 3))\n\n```")
+  out = c(out, g, knit_expanded)
+  
+  }
 
 ```
 
-
-****
+`r paste(knit(text = out), collapse = '\n')`
 
 <br>
+<br>
 
-### 5. RESTRICTION ZONES
+### 5. **RESTRICTION ZONES**
+<br>
+```{r Buffers, results = 'asis', echo = FALSE, warning = FALSE, message = FALSE, fig.align='center',fig.width=9.5, fig.height=7}
 
-This section generates 3 circular restriction zones centered at the PPN's coordinates. If PPN coordinates were missing in the dataset, the circular buffers are centred on the provided coordinates. The zones have different radius: 
+buffer_size <- buffer_size[order(buffer_size, decreasing = FALSE)]
 
-* 1 km (red zone)    
-* 3 km (yellow zone)    
-* 10 km (green zone)    
-
-```{r Buffers, results = 'asis', echo = FALSE, warning = TRUE, message = TRUE}
-
-#Buffers and Outbreak: Create multiple buffers
-x <- coordinates(outbreak)[, 1] # Outbreak coord x
-y <- coordinates(outbreak)[, 2] # Outbreak coord y
-
-# So far working for 1 ppn per time
-stopifnot(length(x) == 1 & length(y) == 1)
-
-
-# Buffer. Draw a circle with 1 km radius
-nr = 500 # n. of points
-r = 1000 #input$buf1 # radius
-buf1 = seq(0, 2 * pi, length.out = nr)
-xy = cbind(x + r * sin(buf1), y + r * cos(buf1))
-
-# Create the spatial object
-buf_sp1 = SpatialPolygons(
-  list(Polygons(
-  list(Polygon(xy)), "1km")))
-proj4string(buf_sp1) <- CRS("+init=epsg:3021")
-
-#  Buffer. Draw a circle with 3 km radius
-nr3 = 500 # n. of points
-r3 = 3000 #input$buf2  # radius
-buf3 = seq(0, 2 * pi, length.out = nr3)
-xz = cbind(x + r3 * sin(buf3), y + r3 * cos(buf3))
-
-# Create a "donut" insted of a buffer. 1 km is a hole in the 3 km buffer 
-buf_sp3 = SpatialPolygons(
-  list(Polygons(
-  list(Polygon(xz, hole = F), Polygon(xy, hole = T)), "3km")))
-proj4string(buf_sp3) <- CRS("+init=epsg:3021")
-
-# Buffer. Draw a circle with 10 km radius
-nr10 = 500 # n. of points
-r10 = 10000 #input$buf3  # radius
-buf10 = seq(0, (2 * pi), length.out = nr10)
-yz = cbind(x + r10 * sin(buf10), y + r10 * cos(buf10))
-
-# Create a "donut" insted of a buffer. 3km is a hole in the 10km buffer
-buf_sp10 = SpatialPolygons(
-          list(Polygons(
-          list(Polygon(yz, hole = F), Polygon(xz, hole = T)), "10km" )))
-proj4string(buf_sp10) <- CRS("+init=epsg:3021")
-
-```
-
-
-```{r FarmsInBuffers, results='asis', echo=FALSE}
-
-# Spatial subset of farms in each buffer. When no farms inside buffers it gives back just the outbreak (to avoid an error in leafletR). Check if can be fixed using leaflet library
-
-if(all(is.na(over(farms_RT90, buf_sp10)))) {
+buffer_ppn <- function(ppn, buffer_size) {
   
-  farms_in10_RT90 <- outbreak1
-  
-} else {
-  
- farms_in10_RT90 <- farms_RT90[buf_sp10, c(1,4,8,11,41)]
-}
+  do.call(rbind,
+          lapply(buffer_size, function(x) {
+            buffer <- gBuffer(ppn,
+                              width = x * 1000,
+                              id = as.character(x),
+                              byid = FALSE,
+                              quadsegs = 500)
+            })
+       )
+  }
 
-if(all(is.na(over(farms_RT90, buf_sp3)))) {
+buffer <- buffer_ppn(outbreak, buffer_size)
+
+proj4string(buffer) <- CRS("+init=epsg:3021")
+
+hole <- function(buffer_polygons) {
   
-  farms_in3_RT90 <- outbreak1
-
-} else {
-  
-  farms_in3_RT90 <- farms_RT90[buf_sp3, c(1,4,8,11,41)]
-}
-
-if(sum(!is.na(over(farms_RT90, buf_sp1))) == 0 |
-   sum(!is.na(over(farms_RT90, buf_sp1))) == 1) {
-  
-  farms_in1_RT90 <- outbreak1
-  
-} else {
-  
-  farms_in1_RT90 <- farms_RT90[buf_sp1, c(1,4,8,11,41)]
-  farms_in1_RT90 <- farms_in1_RT90[farms_in1_RT90@data$Ppn != ppn,]
-}
-```
-
-
-```{r PlotMap2, fig.width=14, fig.height=14, echo=FALSE, warning=FALSE, message=FALSE}
-
-plot(buf_sp10, axes = T, col = rgb(0,1,0, alpha = 1), lty=5, lwd = 2)
-plot(buf_sp3, add = T, col = rgb(1,1,0, alpha = 1), lty=3, lwd = 2)
-plot(buf_sp1, add = T, col = rgb(1,0,0, alpha = 1), lwd = 2)
-plot(outbreak, add = T, col = "black", pch = 19, cex = 1)
-
-if(!identical(farms_in10_RT90, outbreak1)) {
-  if(nrow(farms_in10_RT90@data) == 1) {
-    invisible(text(coordinates(farms_in10_RT90),
-                   labels = as.character(farms_in10_RT90@data$Ppn),
-                   cex = 0.6,
-                   pos = 1,
-                   offset = 1))
+  if (length(buffer_polygons) == 0 | !exists("buffer_polygons")) {
+  stop("The buffers object is empty or doesn't exist")
+  }
     
-} else {
+  if (length(buffer_polygons) == 1) {
+    buffer_sp <- buffer_polygons[1]
+    buffer_sp@polygons[[1]]@ID <- paste0(buffer_size[1])
+    df <- data.frame(buffer = buffer_sp@polygons[[1]]@ID, 
+                                       row.names=buffer_sp@polygons[[1]]@ID)
+    buffer_sp <- SpatialPolygonsDataFrame(buffer_sp, df)
+    return(buffer_sp)
+    }
   
-  textplot(coordinates(farms_in10_RT90)[, 1],
-           coordinates(farms_in10_RT90)[, 2],
-           as.character(farms_in10_RT90@data$Ppn),
-           cex = 0.7,
-           new = FALSE)
-  
-  plot(farms_in10_RT90, add = T, col = "green", bg = "black", pch = 19, cex = 0)
-  
-  }
+  if (length(buffer_polygons) > 1) {
+    buf_sp1 <- buffer_polygons[1]
+    buf_sp1@polygons[[1]]@ID <- paste0(buffer_size[1])
+    df <- data.frame(buffer = buf_sp1@polygons[[1]]@ID, 
+                                       row.names=buf_sp1@polygons[[1]]@ID)
+    buf_sp1 <- SpatialPolygonsDataFrame(buf_sp1, df)
+    
+    buffers <- do.call("rbind",
+                    lapply(rev(2:length(buffer_polygons)), function (x) {
+                      a <- gDifference(buffer_polygons[x], buffer_polygons[x-1])
+                      a@polygons[[1]]@ID <- buffer_polygons@polygons[[x]]@ID
+                      df1 <- data.frame(buffer = a@polygons[[1]]@ID,
+                                        row.names = a@polygons[[1]]@ID)
+                      spdf <-  SpatialPolygonsDataFrame(a, df1)
+                      
+                      return(spdf)
+                      
+                      }))
+    
+    buffer_sp <- rbind(buffers, buf_sp1)
+    
+    }
 }
 
-if(!identical(farms_in3_RT90, outbreak1)) {
-  if(nrow(farms_in3_RT90@data) == 1) {
-   invisible(text(coordinates(farms_in3_RT90),
-                  labels = as.character(farms_in3_RT90@data$Ppn),
-                  cex = 0.7))
-} else {
+buffer_sp <- hole(buffer)  
+```
+
+```{r FarmsInBuffers, results='asis', echo=FALSE, eval=TRUE}
+
+buffer_sp <- spTransform(buffer_sp, CRS("+init=epsg:3021"))
+
+if(all(is.na(over(farms_RT90, buffer_sp)))) {
   
-  textplot(coordinates(farms_in3_RT90)[, 1],
-           coordinates(farms_in3_RT90)[, 2],
-           as.character(farms_in3_RT90@data$Ppn),
-           cex = 0.7,
-           new = FALSE)
-
-  plot(farms_in3_RT90, add = T, bg = "yellow", pch = 19, cex = 0)
-
-  }
+  farms_in_buffers <- outbreak1
+  
+  } else {
+    
+    check_in_buffers <- over(farms_RT90, buffer_sp)
+    
+    farms_in_buffers <- farms_RT90[buffer_sp, c("Ppn",
+                                            "Species",
+                                            "Kommun",
+                                            "Adress",
+                                            "Postadress")]
+    
+    farms_in_buffers@data$buffer <- check_in_buffers$buffer[
+      row.names(check_in_buffers) %in% row.names(farms_in_buffers)]
 }
-
-
-if(!identical(farms_in1_RT90, outbreak1)) {
-  if(nrow(farms_in1_RT90@data) == 1) {
-    invisible(text(coordinates(farms_in1_RT90),
-                   labels = as.character(farms_in1_RT90@data$Ppn),
-                   cex = 0.7))
-} else {
-  
-  textplot(coordinates(farms_in1_RT90)[, 1],
-           coordinates(farms_in1_RT90)[, 2],
-           as.character(farms_in1_RT90@data$Ppn),
-           cex = 0.7,
-           new = FALSE)
-  
-  plot(farms_in1_RT90, add = T, bg = "red", pch = 19, cex = 0)
-
-  }
-}
-
-legend("topright", cex = 1,
-       c("Buffer 10 km", "Buffer 3 km", "Buffer 1 km"),
-       pch = c(21, 21, 21), pt.cex = 0,
-       fill = c("green", "yellow", "red"), bty = "n")
-
-title(expression(paste("Restriction Zones: PPNs within buffer areas of 1, 3 and 10 km radius")))
 
 ```
 
-****
+There is a total of **`r if(!identical(farms_in_buffers, outbreak)){sum(nrow(farms_in_buffers@data))}else{"0"}`** PPNs within the selected buffer zones. The table below reports the number of PPNs in each buffer zone.
 
-<br>
+```{r PPN in Buffers, results='asis', echo=FALSE, warning=FALSE, message=FALSE}
 
-```{r LeafletMap2, results='asis',echo=FALSE, warning=FALSE, message=FALSE, fig.width=9, fig.align='center'}
-
-outbreak2 <- spTransform(outbreak1, CRS("+init=epsg:4326"))
-
-# Buffer1km
-buf_sp1_84 <- spTransform(buf_sp1, CRS("+init=epsg:4326"))
-buf_spdf1_84 <- SpatialPolygonsDataFrame(buf_sp1_84,
-                                       data.frame(N = "Restriction_zone_1km",
-                                                  row.names = "1km"))
-
-# Buffer3km
-buf_sp3_84 <- spTransform(buf_sp3, CRS("+init=epsg:4326"))
-buf_spdf3_84 <- SpatialPolygonsDataFrame(buf_sp3_84,
-                                       data.frame(N="Restriction_zone_3km",
-                                                  row.names="3km"))
-
-# Buffer10km
-buf_sp10_84 <- spTransform(buf_sp10, CRS("+init=epsg:4326"))
-buf_spdf10_84 <- SpatialPolygonsDataFrame(buf_sp10_84,
-                                       data.frame(N="Restriction_zone_10km",
-                                                  row.names="10km"))
-
-
-# farms within 1 km buffer
-farms_in1_84 <- spTransform(farms_in1_RT90, 
-                     CRS("+init=epsg:4326"))
-
-
-# farms within 3 km buffer
-farms_in3_84 <- spTransform(farms_in3_RT90, 
-                     CRS("+init=epsg:4326"))
-
-
-# farms within 10 km buffer
-farms_in10_84 <- spTransform(farms_in10_RT90, 
-                     CRS("+init=epsg:4326"))
-
-
-# final map
-
-pop_out <- paste0(outbreak2@data)
-
-LeafletMap2 <- leaflet() %>% addProviderTiles("CartoDB.Positron")
-
-LeafletMap2 %>%
-  
-  addCircles(data = farms_in10_84,
-                   stroke = TRUE,
-                   fill = TRUE,
-                   fillColor = "green") %>%
-  
-  addCircles(data = farms_in3_84,
-                   stroke = TRUE,
-                   fill = TRUE,
-                   fillColor = "yellow") %>%
-  
-  addCircles(data = farms_in1_84,
-                   stroke = TRUE,
-                   fill = TRUE,
-                   fillColor = "red") %>%
-
-  
-  addPolygons(data = buf_spdf10_84, color = "green", fill = "green") %>%
-  addPolygons(data = buf_spdf3_84, color = "yellow", fill = "yellow") %>%
-  addPolygons(data = buf_spdf1_84, color = "red", fill = "red") %>%
-
-  addCircles(data = outbreak2,
-                   stroke = FALSE,
-                   fill = TRUE,
-                   fillColor = "black",
-                   fillOpacity = 1,
-                   popup = pop_out) 
+z <- data.frame(table(farms_in_buffers@data$buffer))
+colnames(z) <- c("buffer", "n.")
+kable(z, align = "c")
 
 ```
-
-****
-
 <br>
 
-### 6. SUMMARY STATISTICS FOR PPNs WITHIN RESTICTION ZONES
 
-* There are __`r if(!identical(farms_in1_RT90,outbreak1)){sum(nrow(farms_in1_RT90@data))}else{"0"}`__ PPNs in 1 km radius from the position of the investigaed PPN 
+### 6. **SUMMARY STATISTICS FOR ANIMALS WITHIN RESTICTION ZONES**
 <br>
-* There are __`r if(!identical(farms_in3_RT90,outbreak1)){sum(nrow(farms_in3_RT90@data))}else{"0"}`__ PPNs in 3 km radius from the position of the investigaed PPN
-<br>
-* There are __`r if(!identical(farms_in10_RT90,outbreak1)){sum(nrow(farms_in10_RT90@data))}else{"0"}`__ PPNs in 10 km radius from the position of the investigaed PPN
-
-<br>
-
-```{r SumAnimal,results='asis',echo=FALSE}
+```{r SumAnimal, warning=FALSE, results='asis',message=FALSE, echo=FALSE, eval=TRUE}
 
 #duplicated PPN records for total herds/farms/animal calculation
 
-if(!identical(farms_in1_RT90, outbreak1)) {
-  
-  n.PPN.in1 <- PPN[which(PPN$Ppn %in% farms_in1_RT90@data$Ppn),]
-}
+# if(!identical(farms_in_buffers, outbreak1)) {
 
-if(!identical(farms_in3_RT90, outbreak1)) {
-  
-  n.PPN.in3 <- PPN[which(PPN$Ppn %in% farms_in3_RT90@data$Ppn),]
-}
-
-if(!identical(farms_in10_RT90, outbreak1)){
-  
-  n.PPN.in10 <- PPN[which(PPN$Ppn %in% farms_in10_RT90@data$Ppn),]
-}
-
+n_PPN_buffers <- PPN[which(PPN$Ppn %in% farms_in_buffers@data$Ppn),]
+n_PPN_buffers$buffer <- farms_in_buffers@data$buffer[
+  match(n_PPN_buffers$Ppn, farms_in_buffers@data$Ppn)]
+#}
 
 sum_anim <- function(n.PPN.in) {
   
@@ -496,7 +427,7 @@ sum_anim <- function(n.PPN.in) {
                         "CDB.Antal",
                         "Maxkapacitet")]
   
-  ani_sum <- apply (n.anim, 1, FUN = sum, na.rm = T)
+  ani_sum <- rowSums (n.anim, na.rm = T)
   
   n.PPN.in <- cbind (n.PPN.in, ani_sum)
   
@@ -504,68 +435,40 @@ return (n.PPN.in)
 
 }
 
-if(!identical(farms_in1_RT90, outbreak1)) {
+# if(!identical(n_PPN_buffers, outbreak1)) {
   
-  n.PPN.in1 <- sum_anim(n.PPN.in1)
+  n.PPN.in1 <- sum_anim(n_PPN_buffers)
   
-}
+# }
 
-if(!identical(farms_in3_RT90, outbreak1)) {
-  
-n.PPN.in3 <- sum_anim(n.PPN.in3)
+# Exclusion of duplicated values when Djurhållare == DJURINNEHAVARE (to sum properly)
 
-}
-
-if(!identical(farms_in10_RT90, outbreak1)) {
-  
-n.PPN.in10 <- sum_anim(n.PPN.in10)
-
-}
-
-# Exclusion of duplicated values when Djurhållare== DJURINNEHAVARE (to sum properly)
-
-if(!identical(farms_in1_RT90,outbreak1)) {
+# if(!identical(farms_in1_RT90,outbreak1)) {
   
   n.PPN.in1 <- n.PPN.in1[!duplicated(n.PPN.in1[c("Ppn",
                                                  "Adress",
                                                  "Typ",
                                                  "Typ.1",
                                                  "tot_anim")]),]
-}
-
-if(!identical(farms_in3_RT90, outbreak1)) {
-  
-  n.PPN.in3 <- n.PPN.in3[!duplicated(n.PPN.in3[c("Ppn",
-                                                 "Adress",
-                                                 "Typ",
-                                                 "Typ.1",
-                                                 "tot_anim")]),]
-
-}
-
-if(!identical(farms_in10_RT90, outbreak1)) {
-  
-n.PPN.in10 <- n.PPN.in10[!duplicated(n.PPN.in10[c("Ppn",
-                                                  "Adress",
-                                                  "Typ",
-                                                  "Typ.1",
-                                                  "tot_anim")]),]
-}
+# }
 
 ```
+<br>
 
-#### 6.1 SUMMARY STATISTICS FOR PPNs WITHIN 1 KM RADIUS
+```{r Plot_Animal, results='asis',echo=FALSE, message=FALSE, warning=FALSE,fig.width=10}
 
-Total number of herds/animals per species belonging to PPNs inside the radius of __1km__ are showed in the graph: 
+b <- split(n.PPN.in1, 
+           factor(n.PPN.in1$buffer, levels=rev(levels(n.PPN.in1$buffer))),
+           drop = TRUE)
 
-```{r herds/animIn1km, results='asis', fig.height=4, fig.width=12, echo=FALSE}
-
-if(!identical(farms_in1_RT90, outbreak1)) {
+#if(!identical(farms_in1_RT90, outbreak1)) {
       
-      counts <- table(n.PPN.in1$Typ)
+plot_graph <- function(list_df) {
+  
+      counts <- table(list_df$Typ)
       
-      counts2 <-tapply(n.PPN.in1$ani_sum, 
-                       INDEX = n.PPN.in1$Typ,
+      counts2 <-tapply(list_df$ani_sum, 
+                       INDEX = list_df$Typ,
                        FUN=sum)
       
       width = ifelse(length(counts) == 1, 0.2, 0.6)
@@ -573,7 +476,9 @@ if(!identical(farms_in1_RT90, outbreak1)) {
       par(mfrow = c(1,2), las = 2)
       
       b1a <- barplot(counts,
-                     main="Number of herds by species",
+                     main = paste("Number of animals by species (buffer",
+                                  unique(list_df$buffer), "km)"),
+                     cex.main = 0.9,
                      ylab = "Number of herds",
                      ylim = c(0, max(counts * 1.4)),
                      xlim = c(0, length(counts)),
@@ -583,7 +488,9 @@ if(!identical(farms_in1_RT90, outbreak1)) {
            pos = 3, cex = 0.8, col = "black")
       
       b1b <- barplot(counts2,
-                     main = "Number of animals by species",
+                     main = paste("Number of animals by species (buffer",
+                                  unique(list_df$buffer), "km)"),
+                     cex.main = 0.9,
                      ylab = "Number of animals",
                      ylim = c(0, max(counts2 * 1.4)),
                      xlim = c(0, length(counts2)),
@@ -591,725 +498,743 @@ if(!identical(farms_in1_RT90, outbreak1)) {
       
       text(x = b1b, y = counts2, label = counts2,
            pos = 3, cex = 0.8, col = "black")
-      
-} else {
-      
-     cat("* **No PPNs other than the investigated PPN within the  radius of 1 km**")
-}
+
+      return(NULL)
+      }
+
+invisible(lapply(b, plot_graph))
+
+# } else {
+#       
+#      cat("* **No PPNs other than the investigated PPN within the Restriction zones**")
+# }
 ```
-
+<br>
 <br>
 
-#### 6.2 SUMMARY STATISTICS FOR PPNs WITHIN 3 KM RADIUS
+### 7. **LIST OF PPNs WITHIN RESTICTION ZONES**
+<br>
+```{r PPNsDistance, results='asis', echo=FALSE, eval=TRUE}
 
-Total number of herds/animals per species belonging to PPNs inside the radius of __3km__ are showed in the graph:  
+#Calculate distance matrix to assign farms to outbreaks farm
 
-```{r herds/animIn3km,results='asis',fig.height=4, fig.width=12, echo=FALSE}
-
-if(!identical(farms_in3_RT90, outbreak1)) {
-      
-      counts<- table(n.PPN.in3$Typ)
-      
-      counts2<-tapply(n.PPN.in3$ani_sum,
-                      INDEX = n.PPN.in3$Typ,
-                      FUN = sum)
-      
-      width = ifelse(length(counts) == 1, 0.2, 0.8)
-      
-      par(mfrow = c(1,2), mar = c(5.1, 4.8, 4.1, 2.1),
-          mgp = c(3.8, 1, 0), las=2)
-      
-      b3a <- barplot(counts, 
-                     main = "Number of herds by species",
-                     ylab = "Number of herds",
-                     ylim = c(0, max(counts * 1.4)),
-                     xlim = c(0, length(counts)),
-                     width = width)
-      
-      text(x = b3a, y = counts, label = counts, 
-           pos = 3, cex = 0.8, col = "black",)
-      
-      b3b <- barplot(counts2,
-                     main = "Number of animals by species",
-                     ylab = "Number of animals",
-                     ylim = c(0, max(counts2 * 1.4)),
-                     xlim = c(0, length(counts2)),
-                     width = width)
-      
-      text(x = b3b, y = counts2, label = counts2, 
-           pos = 3, cex = 0.8, col = "black",)
-
-} else {
-      
-     cat("* **No PPNs other than the investigated PPN within the radius of 3 km**")
+#Euclidean distance matrix
+DistMatrix = function(farms_in_buffers, longlat = FALSE) {
+  distance <- sapply(1:length(farms_in_buffers[[1]]), 
+    function(x) {spDistsN1(coordinates(outbreak),
+                           coordinates(farms_in_buffers[x,]), 
+                           longlat)})
+  return(distance)
 }
-```
 
-<br>
+if (length(ppn) > 1) {
 
-#### 6.3 SUMMARY STATISTICS FOR PPNs WITHIN 10 KM RADIUS
+  dm_farms_in1 <- DistMatrix(farms_in_buffers)
+  dm_farms_in1 <- as.data.frame(t(dm_farms_in1))
+  outbreak_ppn <- as.character(outbreak@data$Ppn)
+  farms_ppn <- as.character(farms_in_buffers@data$Ppn)
 
-Total number of herds/animals per species belonging to PPNs inside the radius of __10km__ are showed in the graph: 
+  min_dist <- apply(dm_farms_in1[, 1:length(outbreak_ppn)], 1, min)
 
-```{r herds/animIn10km,results='asis',fig.height=4, fig.width=12, echo=FALSE}
+  dm_farms_in1$near_out <- NULL
 
-if(!identical(farms_in10_RT90, outbreak1)) {
+  for(i in 1:length(farms_ppn)) {
   
-  counts <- table(n.PPN.in10$Typ)
+  dm_farms_in1$near_out[i] <- outbreak_ppn[
+  which(dm_farms_in1[i, 1:ncol(dm_farms_in1)] == min_dist[i])]
+
+  }
+
+  farms_in_buffers2 <- farms_in_buffers@data
+  farms_in_buffers2 <- data.frame(farms_in_buffers2, nearest = as.factor(dm_farms_in1$near_out))
   
-  counts2 <- tapply(n.PPN.in10$ani_sum,
-                        INDEX=n.PPN.in10$Typ,
-                        FUN=sum)
-  
-  width = ifelse(length(counts) == 1, 0.2, 0.8)
-  
-  par(mfrow = c(1, 2), mar = c(5.1, 4.8, 4.1, 2.1),
-      mgp = c(3.8, 1, 0), las = 2)
-  
-  b10a <- barplot(counts,
-                  main = "Number of herds by species",
-                  ylab = "Number of herds",
-                  ylim = c(0, max(counts * 1.4)),
-                  xlim = c(0, length(counts)),
-                  width = width)
-  
-  text(x = b10a, y = counts, label = counts, 
-           pos = 3, cex = 0.8, col = "black",)
-  
-  b10b <- barplot(counts2,
-                  main = "Number of animals by species",
-                  ylab = "Number of animals",
-                  ylim = c(0, max(counts2 * 1.8)),
-                  xlim = c(0, length(counts2)),
-                  width = width)
-  
-  text(x = b10b, y = counts2, label = counts2, 
-           pos = 3, cex = 0.8, col = "black",)
-
-} else {
-      
-     cat("* **No PPNs other than the investigated PPN within the radius of 10 km**")
-}
-```
-
-****
-
-<br>
-
-### 7. TYPE AND NUMBER OF ANIMALS
-
-```{r PPNsDistance, results='asis', echo=FALSE}
-
-if(!identical(farms_in1_RT90, outbreak1)) {
-  
-  dist_farms_in1_RT90 <- data.frame(farms_in1_RT90@data$Ppn,
-                                    spDistsN1(farms_in1_RT90,
-                                              outbreak,
-                                              longlat = FALSE))
-  
-  colnames(dist_farms_in1_RT90) <- c("Ppn", "distance")
-} 
-
-if(!identical(farms_in3_RT90, outbreak1)) {
-
-  dist_farms_in3_RT90 <- data.frame(farms_in3_RT90@data$Ppn,
-                                    spDistsN1(farms_in3_RT90,
-                                              outbreak,
-                                              longlat = FALSE))
-  
-  colnames(dist_farms_in3_RT90) <- c("Ppn", "distance")
-} 
-
-if(!identical(farms_in10_RT90, outbreak1)) {
-  
-  dist_farms_in10_RT90 <- data.frame(farms_in10_RT90@data$Ppn,
-                                     spDistsN1(farms_in10_RT90,
-                                               outbreak,
-                                               longlat = FALSE))
-  
-  colnames(dist_farms_in10_RT90)<-c("Ppn","distance")
-}
-```
-
-This section reports the number of animals per each PPN included within  1, 3, 10 km radius. PPNs are displayed in ascending order by distance from the investigated PPN location.     
-Some PPNs showed repeated records, due to dupliceted entries in "Typ.2" field distinguishing "DJURHALLARE" and "DJURINNEHAVARE". Such records are not shown in the following tables. However, the comprehensive list of PPN's records is available clicking the link to the excel files present at the bottom of each table.
-
-<br>
-
-#### 7.1 PPNs WHITHIN 1 KM RADIUS
-
-<br>
-
-```{r Anim1kmTable, echo=FALSE, results='asis', warning=FALSE, message=FALSE}
-
-if(!identical(farms_in1_RT90, outbreak1)) {
-  anim1 <- merge(dist_farms_in1_RT90, n.PPN.in1, by = "Ppn")
-  anim1 <- anim1[order(anim1$distance, anim1$Typ), ]
-  colnames(anim1)[2] <- "distans(m)"
-  
-# Table
-anim1_DT <- anim1[, c(1,2,11,14,19,26,43)]
-  
-  datatable(anim1_DT,  extensions = 'TableTools',
-           options = list(
-                    columnDefs = list(
-                                    list(className = 'dt-center',
-                                         targets = c(0,1,4,5,6))),
-                    dom = 'T<"clear">ftip', pageLength = dim(quakes)[1],
-                                    tableTools = list(
-                                      sSwfPath = copySWF(),
-                                      aButtons = list( list(
-                                        sExtends = 'collection',
-                                        sButtonText = 'Save',
-                                        aButtons = c('csv', 'xls')
-                                      )))
-                    ))  %>% formatRound('distans(m)', 0)
-
 } else {
   
-  cat("* **No PPNs other than the investigated PPN within the radius of 1km**")
-
-}
-
-```
-
-
-<br>
-
-#### 7.2 PPNs WHITHIN 3 KM RADIUS
-
-<br>
-
-```{r Anim3kmTable, results='asis', echo=FALSE}
-
-if(!identical(farms_in3_RT90, outbreak1)){
-  anim3 <- merge(dist_farms_in3_RT90, n.PPN.in3, by = "Ppn")
-  anim3 <- anim3[order(anim3$distance, anim3$Typ), ]
-  colnames(anim3)[2] <- "distans(m)"
-
-# Table
-  anim3_DT <- anim3[, c(1,2,11,14,19,26,43)]
-  datatable(anim3_DT,
-            options = list(
-              columnDefs = list(
-                list(className = 'dt-center',
-                     targets = c(0,1,4,5,6))
-                )
-              )
-            ) %>% formatRound('distans(m)', 0)
-
-} else {
-  
-  cat("* **No PPNs other than the investigated PPN within the radius of 3 km**")
-
+    farms_in_buffers2 <- farms_in_buffers@data
 }
 ```
 
 
-<br>
+```{r PPNsDistance2, results='asis', echo=FALSE, eval=TRUE}
 
-#### 7.3 PPNs WHITHIN 10 KM RADIUS
+farms_in_buffers <- spTransform(farms_in_buffers, CRS("+init=epsg:3021")) #??????
 
-<br>
+col_names <- names(farms_in_buffers2)
+farms_in_buffers2[, col_names] <- lapply(farms_in_buffers2[, col_names] , factor)
 
-```{r Anim10kmTable, results='asis', echo=FALSE}
+farms <- split(farms_in_buffers2, 
+               factor(farms_in_buffers2$buffer,
+                      levels=rev(levels(farms_in_buffers2$buffer))),
+               drop = TRUE)
 
-if(!identical(farms_in10_RT90, outbreak1)){
-  anim10 <- merge(dist_farms_in10_RT90, n.PPN.in10, by = "Ppn")
-  anim10 <- anim10[order(anim10$distance, anim10$Typ), ]
-  colnames(anim10)[2] <- "distans(m)"
+out2 = NULL
+for (k in 1:length(farms)) {
+g2 <- paste0("<br>", "<br>", "**LIST OF FARMS WITHIN BUFFER **", names(farms[k]), "km", "<br>", "<br>")
+  knit_expanded2 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(farms[[", k, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+
+  out2 = c(out2, g2, knit_expanded2)
   
-  # Table
-  anim10_DT <- anim10[, c(1,2,11,14,19,26,43)]
-  datatable(anim10_DT,
-            options = list(
-              columnDefs = list(
-                list(className = 'dt-center',
-                     targets = c(0,1,4,5,6))
-                )
-              )
-            ) %>% formatRound('distans(m)', 0)
+  }
 
-} else {
+```
+
+`r paste(knit(text = out2), collapse = '\n')`
+
+
+##### **PPNs WITHIN RESTRICTION ZONES MAP** 
+
+```{r LeafletMap2, results='asis',echo=FALSE, warning=FALSE, message=FALSE, fig.width=9.5, fig.height=7, fig.align='center',eval=TRUE}
+
+# CRS transformation
+buffer_sp  <- spTransform(buffer_sp, CRS("+init=epsg:4326"))
+farms_in_buffers <- spTransform(farms_in_buffers, CRS("+init=epsg:4326"))
+outbreak2 <- spTransform(outbreak1, CRS("+init=epsg:4326"))
+
+# Set palette and popups for Leaflet map
+if(length(as.numeric(buffer_sp@data$buffer)) == 1) {
   
-  cat("* **No PPNs other than the investigated PPN within the radius of 10 km**")
+  pal <- colorNumeric(
+  palette = c("#d7191c"),
+  domain = as.numeric(farms_in_buffers@data$buffer))
+  
+  pal2 <- colorFactor(
+  palette = c("#d7191c"),
+  domain = as.numeric(buffer_sp@data$buffer))
+}
+
+if(length(as.numeric(buffer_sp@data$buffer)) == 2) {
+  
+  pal <- colorNumeric(
+  palette = c("#ffffbf", "#d7191c"),
+  domain = as.numeric(farms_in_buffers@data$buffer))
+  
+  pal2 <- colorFactor(
+  palette = c("#ffffbf", "#d7191c"),
+  domain = as.numeric(buffer_sp@data$buffer))
+}
+
+if(length(as.numeric(buffer_sp@data$buffer)) >= 3) {
+
+pal <- colorNumeric(
+  palette = c("#1a9641","#a6d96a", "#ffffbf", "#fdae61", "#d7191c"),
+  domain = as.numeric(farms_in_buffers@data$buffer))
+
+pal2 <- colorFactor(
+  palette = c("#1a9641","#a6d96a", "#ffffbf", "#fdae61", "#d7191c"),
+  domain = as.numeric(buffer_sp@data$buffer))
 
 }
+
+popups <- paste("Buffer", as.character(buffer_sp@data$buffer),"km")
+popups2 <- popups2 <- paste(sep = "<br/>",
+                            "<b>PPN</b>", farms_in_buffers@data$Ppn,
+                            "<b>Adress</b>", farms_in_buffers@data$Adress,
+                            "<b>Species</b>",farms_in_buffers@data$Species)
+
+box2 <- as.vector(outbreak1_wgs@bbox)
+
+# Draw the map
+LeafletMap2 <- leaflet() %>% addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  fitBounds(box2[1], box2[2], box2[3], box2[4])
+
+LeafletMap2 %>% 
+  
+  addPolygons(data = buffer_sp,
+              fillColor = ~pal2(as.numeric(buffer_sp@data$buffer)), 
+              stroke = TRUE,
+              weight = 0.5,
+              color = "black",
+              fillOpacity = 0.3,
+              group = "Buffers",
+              popup = popups) %>%
+  
+  addCircleMarkers(data = farms_in_buffers,
+                   stroke= TRUE,
+                   color="black",
+                   weight=2,
+                   radius=3,
+                   fill = TRUE,
+                   fillColor = ~pal(as.numeric(farms_in_buffers@data$buffer)),
+                   fillOpacity = 1,
+                   group = "PPNs",
+                   popup = popups2)  %>%
+  
+  addLayersControl(
+    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+    overlayGroups = c("Buffers", "PPNs"),
+    options = layersControlOptions(collapsed = TRUE))   %>%  
+
+    
+addLegend("bottomright",
+              values = buffer_sp@data$buffer,
+              title = "Restriction zones",
+              pal = pal2,
+              labels = buffer_sp@data$buffer,
+              labFormat = labelFormat(prefix = "Buffer ",
+                                      suffix = "km"),
+              opacity = 0.7) 
+```
+<br>
+<br>
+
+##### **LIST AND NUMBER OF ANIMALS PER PPN WITHIN RESTRICTION ZONES** 
+<br>
+```{r PPNs Anim number, results='asis', echo=FALSE, eval=TRUE}
+
+n_anim_rz <- PPN[PPN$Ppn %in% farms_in_buffers@data$Ppn, ]
+
+n_anim_rz <- n_anim_rz[c("Ppn", 
+                           "Species", 
+                           "Typ", 
+                           "Namn",
+                           "Kommun",
+                           "Adress",
+                           "Telefonnummer.1",
+                           "Mobilnummer")]
+
+colnames(n_anim_rz) <-   c("Ppn",
+                           "Species",
+                           "Typ",
+                           "Namn",
+                           "Kommun",
+                           "Adress",
+                           "Telefon",
+                           "Mobil")
+
+col_names <- names(n_anim_rz)
+n_anim_rz[, col_names] <- lapply(n_anim_rz[, col_names] , factor)
+
+ datatable(n_anim_rz, filter='top', rownames =FALSE,
+           escape = FALSE, options = list(pageLength = 5))
+
 ```
 
 
-<br>
+### 8. **ANALYSIS OF CONTACTS** (EpiContactTrace)
 
-***
-
-### 8. ANALYSIS OF CONTACTS (EpiContactTrace)
-
-The analysis covers the last __90__ days from the date of report generation (__`r Sys.Date()`__).   
+The analysis covers the last __365__ days from the date of report generation (__`r Sys.Date()`__).   
 The most recent movements reported into the database are from __`r unique(max(report_data_object()$result$ani_move$t))`__.    
 Run your own contact analysis setting different parameters (click the [link](http://ubuntu1:3838/sample-apps/trace))    
 
-<br>
-
 OBS! Animal movement data may be reported to Jordbruksverket as late as 7 days after a movement has occured
 
+<br>
 
-```{r EpicontacTrace, results='html',warning=FALSE, message=FALSE, comment=NA,echo=FALSE}
+```{r EpicontacTrace, results='html', warning=FALSE, message=FALSE, comment=NA,echo=FALSE}
 
-transfers <- report_data_object()$result$ani_move
+library(EpiContactTrace)
+
+transfers <- result$ani_move
 outbreak <- outbreak@data$Ppn
 
 # Perform contact tracing
-
-contactTrace <- Trace(movements = report_data_object()$result$ani_move,
+temp <- tempfile()
+contactTrace <- Trace(movements = transfers,
                       root = outbreak,
                       tEnd = Sys.Date(),
-                      days = 90)
+                      days = 365)
 
 show(contactTrace)
-
+Report(contactTrace)
+#Ask Stefan how to plot a list
 ```
-
+<br>
 <br>
 
-***
+### 9 **MISSING COORDINATES**
+<br>
+```{r Missing, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
-### 9 MISSING COORDINATES
-
-```{r Missing,results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+buffer_sp  <- spTransform(buffer_sp, CRS("+init=epsg:3021")) #FIX THE NAME NOT DUPLICATES!
 
 postnum_miss <- report_data_object()$result$postnum_miss
-
 PPN_is.na <- report_data_object()$result$PPN_is.na
 
-if (!all(is.na(over(postnum_miss, buf_sp1)))) {
+if (!all(is.na(over(postnum_miss, buffer_sp)))) {
   
-  intersec1km <- postnum_miss[buf_sp1, ]
- 
+  intersec_km <- postnum_miss[buffer_sp, ]
+  
   # match postnummer with postnummer of PPN is.na
-    PPN_pro1km <- PPN_is.na[PPN_is.na$Postnummer %in% 
-                          intersec1km@data$POSTALCODE, ]
-}
+  
+  PPN_pro_km <- PPN_is.na[PPN_is.na$Postnummer %in% 
+                          intersec_km@data$POSTALCODE, ]
+  } else {
 
-if (!all(is.na(over(postnum_miss, buf_sp3)))) {
-  
-  intersec3km <- postnum_miss[buf_sp3, ]
-  
-  PPN_pro3km <- PPN_is.na[PPN_is.na$Postnummer %in% 
-                          intersec3km@data$POSTALCODE, ]
-}
+  intersec_km_NM <- postnum_not_miss[buffer_sp,]
+  intersec_km_NM  <- spTransform(intersec_km_NM, CRS("+init=epsg:4326"))
 
-if (!all(is.na(over(postnum_miss, buf_sp10)))) {
-  
-  intersec10km <- postnum_miss[buf_sp10, ]
-  
-  PPN_pro10km <- PPN_is.na[PPN_is.na$Postnummer %in% 
-                          intersec10km@data$POSTALCODE, ]
-   
 }
 
 ```
 
-Only zip-codes (Postnummer) including PPNs with missing coordinates are displayed in the figure. White colored postnummers, when present, only include PPNs without missing coordinates, that were thus *a priori* excluded from the analysis.        
-Note that generally the total number of PPNs for 10 km radius comprises PPNs already reported for 3 km and 1 km radius. PPNs lists for 3 km comprises PPNs already reported for 1 km radius.
 
-* There are __`r if(exists("PPN_pro1km")){length(unique(PPN_pro1km$Ppn))}else{"0"}`__ PPNs within postnummers intersecting the buffer of __1 km__ radius     
-* There are __`r if(exists("PPN_pro3km")){length(unique(PPN_pro3km$Ppn))}else{"0"}`__ PPNs within postnummers intersecting the buffer of __3 km__  radius     
-* There are __`r if(exists("PPN_pro10km")){length(unique(PPN_pro10km$Ppn))}else{"0"}`__ PPNs within the postnummers intersecting the buffer of __10 km__  radius
+```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE,fig.align='center',fig.width=9.5, fig.height=7, results='asis'}
 
+postnum_not_miss <-report_data_object()$result$postnum_not_miss # LEAFLET MAP?
 
-```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE}
+# CRS transformation
+buffer_sp2  <- buffer_sp
+farms_in_buffers2  <- farms_in_buffers
+buffer_sp2  <- spTransform(buffer_sp2, CRS("+init=epsg:4326"))
+farms_in_buffers2 <- spTransform(farms_in_buffers2, CRS("+init=epsg:4326"))
+intersec_km  <- spTransform(intersec_km, CRS("+init=epsg:4326"))
 
-postnum_not_miss <- report_data_object()$result$postnum_not_miss
-
-if(exists("PPN_pro10km")){
-  plot(intersec10km, col = "green")
-  invisible(text(coordinates(intersec10km),
-               labels=as.character(intersec10km@data$POSTALCODE), 
-               cex = 0.8))
-  }else{
-  intersec10km_NM <- postnum_not_miss[buf_sp10,]
-  plot(intersec10km_NM)
+# Set palette and popups for Leaflet map
+if(length(buffer_sp2@data$buffer) == 1) {
+  
+  pal <- colorNumeric(
+  palette = c("#d7191c"),
+  domain = as.numeric(farms_in_buffers2@data$buffer))
+  
+  pal2 <- colorFactor(
+  palette = c("#d7191c"),
+  domain = as.numeric(buffer_sp2@data$buffer))
 }
 
-if(exists("PPN_pro3km")){
-  plot(intersec3km, col = "yellow", add = TRUE)
-  invisible(text(coordinates(intersec3km),
-               labels = as.character(intersec3km@data$POSTALCODE), 
-               cex = 0.8))
-  }
-
-if(exists("PPN_pro1km")){
-  plot(intersec1km, col = "red", add = TRUE)
-  invisible(text(coordinates(intersec1km),
-               labels=as.character(intersec1km@data$POSTALCODE), 
-               cex = 0.8))
-  }
-
-# plotting postnummer that have no missing coords (makes layout nicer)
-# data(postnummer) is very heavy to plot..
-
-plot(buf_sp10, add = TRUE, lty = 5, lwd = 2)
-plot(buf_sp3, add = TRUE, lty = 3, lwd = 2)
-plot(buf_sp1, add = TRUE, lty = 2, lwd = 2)
-
-if (!all(is.na(over(postnum_not_miss, buf_sp10)))){
-intersec10km_NM <- postnum_not_miss[buf_sp10, ]
-plot(intersec10km_NM, add = TRUE) 
+if(length(buffer_sp2@data$buffer) == 2) {
+  
+  pal <- colorNumeric(
+  palette = c("#ffffbf", "#d7191c"),
+  domain = as.numeric(farms_in_buffers2@data$buffer))
+  
+  pal2 <- colorFactor(
+  palette = c("#ffffbf", "#d7191c"),
+  domain = as.numeric(buffer_sp2@data$buffer))
 }
 
-if (!all(is.na(over(postnum_not_miss, buf_sp3)))){
-intersec3km_NM <- postnum_not_miss[buf_sp3, ]
-plot(intersec3km_NM, add = TRUE)
+if(length(buffer_sp2@data$buffer) >= 3) {
+
+pal <- colorNumeric(
+  palette = c("#1a9641","#a6d96a", "#ffffbf", "#fdae61", "#d7191c"),
+  domain = as.numeric(farms_in_buffers2@data$buffer))
+
+pal2 <- colorFactor(
+  palette = c("#1a9641","#a6d96a", "#ffffbf", "#fdae61", "#d7191c"),
+  domain = as.numeric(buffer_sp2@data$buffer))
+
 }
 
-if (!all(is.na(over(postnum_not_miss, buf_sp1)))){
-intersec1km_NM <- postnum_not_miss[buf_sp1, ]
-plot(intersec1km_NM, add = TRUE)
-}
+popups <- paste("Buffer", as.character(buffer_sp2@data$buffer),"km")
+popups2 <- popups2 <- paste(sep = "<br/>",
+                            "<b>PPN</b>", farms_in_buffers2@data$Ppn,
+                            "<b>Adress</b>", farms_in_buffers2@data$Adress,
+                            "<b>Species</b>",farms_in_buffers2@data$Species)
 
-#plot(postnummer, add=TRUE)
-title(expression(paste(" Postnummers intersecting buffer areas of 1, 3 and 10 km radius")))
+popups3 <- paste(sep = "<br/>",
+                 "<b>Postnummer</b>",
+                 intersec_km@data$POSTALCODE)
+
+box2 <- as.vector(outbreak1_wgs@bbox)
+
+# Draw the map
+LeafletMap2 <- leaflet() %>% addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  fitBounds(box2[1], box2[2], box2[3], box2[4])
+
+if(exists("intersec_km_NM")) {
+
+  LeafletMap2 %>% 
+
+  addPolygons(data = intersec_km, 
+              fillColor = "black",
+              stroke = TRUE,
+              weight = 2,
+              opacity = 1,
+              color = 'white',
+              dashArray = '3',
+              fillOpacity = 0.3,
+              popup = popups3,
+              group = "intersec_km") %>%
+  
+  addPolygons(data = intersec_km_NM, 
+              fillColor = "green",
+              stroke = TRUE,
+              weight = 0.5,
+              color = "black",
+              fillOpacity = 0.3,
+              group = "intersec_km_NM") %>%
+
+  addCircleMarkers(data = farms_in_buffers2,
+                   stroke= TRUE,
+                   color="black",
+                   weight=2,
+                   radius=3,
+                   fill = TRUE,
+                   fillColor = ~pal(as.numeric(farms_in_buffers@data$buffer)),
+                   fillOpacity = 1,
+                   popup = popups2,
+                   group = "PPNs")  %>%
+    
+    addPolygons(data = buffer_sp2,
+              fillColor = ~pal2(as.numeric(buffer_sp@data$buffer)), 
+              stroke = TRUE,
+              weight = 0.5,
+              color = "black",
+              fillOpacity = 0.3,
+              popup = popups,
+              group = "Buffers") %>%
+  
+  addLayersControl(
+    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+    overlayGroups = c("Buffers", "PPNs", "intersec_km", "intersec_km_NM" ),
+    options = layersControlOptions(collapsed = TRUE))
+  
+  } else {
+    
+      LeafletMap2 %>% 
+
+  addPolygons(data = intersec_km, 
+              fillColor = "black",
+              stroke = TRUE,
+              weight = 2,
+              opacity = 1,
+              color = 'white',
+             dashArray = '3',
+              fillOpacity = 0.3,
+              popup = popups3,
+              group = "Postnummers") %>%
+  
+   addCircleMarkers(data = farms_in_buffers2,
+                   stroke= TRUE,
+                   color="black",
+                   weight=2,
+                   radius=3,
+                   fill = TRUE,
+                   fillColor = ~pal(as.numeric(farms_in_buffers@data$buffer)),
+                   fillOpacity = 1,
+                   popup = popups2,
+                   group = "PPNs")  %>%
+    
+    addPolygons(data = buffer_sp2,
+              fillColor = ~pal2(as.numeric(buffer_sp@data$buffer)), 
+              stroke = TRUE,
+              weight = 0.5,
+              color = "black",
+              fillOpacity = 0.3,
+              popup = popups,
+              group = "Buffers") %>%
+    
+    addLayersControl(baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+                     overlayGroups = c("Buffers", "PPNs", "Postnummers"),
+                     options = layersControlOptions(collapsed = FALSE)) %>%
+    
+    addLegend("bottomright",
+              values = buffer_sp2@data$buffer,
+              title = "Restriction zones",
+              pal = pal2,
+              labels = buffer_sp2@data$buffer,
+              labFormat = labelFormat(prefix = "Buffer ",
+                                      suffix = "km"),
+              opacity = 0.7) 
+
+}
 ```
-
 <br>
 
-#### 9.1 PPNs WHITHIN POSTNUMMERS INTERSECTING 1 KM BUFFER
-
+### 9.1 List of PPN records with missing coordinates within postnummers
+<br>
 ```{r Missing table1, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
-if(exists("PPN_pro1km")) {
-
-  ppn_post1 <- unique(PPN_pro1km[c("Postnummer", "Ppn", "Species")])
-  ppn_post1_len <- as.data.frame(table(ppn_post1$Postnummer))
-  ppn_post1 <- split(ppn_post1$Ppn, ppn_post1$Postnummer)
+if(exists("PPN_pro_km")) {
   
-  ppn_post1 <- unlist(lapply(ppn_post1, function(x) {
+  ppn_post <- unique(PPN_pro_km[c("Postnummer", "Ppn", "Species", "tot_anim")])
+  ppn_post_len <- as.data.frame(table(ppn_post$Postnummer))
+  ppn_post <- split(ppn_post$Ppn, ppn_post$Postnummer)
+  
+  ppn_post <- unlist(lapply(ppn_post, function(x) {
     paste(x, collapse = ", ")
     }))
   
-  ppn_post1 <- data.frame(cbind(labels(ppn_post1), ppn_post1),
-                          ppn_post1_len[, 2])
+  ppn_post <- data.frame(cbind(labels(ppn_post), ppn_post),
+                          ppn_post_len[, 2])
   
-  colnames(ppn_post1) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
+  colnames(ppn_post) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
   
-  kable(ppn_post1, row.names = FALSE)
+  datatable(ppn_post, rownames = FALSE, filter = "top")
 
-} else {
+  } else {
   
-  cat("* **Zip-codes intersecting the buffer of 1 km have no PPNs without missing coordinates**   ")
+  cat("* **Zip-codes intersecting buffers have no PPNs without missing coordinates**   ")
 
 }
-
 ```
 <br>
 
-#### 9.2 PPNs WHITHIN POSTNUMMERS INTERSECTING 3 KM BUFFER
-
-```{r Missing table3, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
-
-if(exists("PPN_pro3km")) {
-  ppn_post3 <- unique(PPN_pro3km[c("Postnummer", "Ppn", "Species")])
-  ppn_post3_len <- as.data.frame(table(ppn_post3$Postnummer))
-  ppn_post3 <- split(ppn_post3$Ppn, ppn_post3$Postnummer)
-  
-  ppn_post3 <- unlist(lapply(ppn_post3, function(x) {
-      paste(x, collapse=", ")
-    }))
-  
-  ppn_post3 <- data.frame(cbind(labels(ppn_post3), ppn_post3),
-                          ppn_post3_len[,2] )
-  
-  colnames(ppn_post3) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
-  
-  kable(ppn_post3, row.names=FALSE) 
-
-} else {
-  
-  cat("* **Zip-codes intersecting the buffer of 3 km have no PPNs without missing coordinates**   ")
-  
-}
-
-```
+### 9.2 Table of PPN records with missing coordinates within postnummers
+<br>
+Duplicated PPNs are present when Djurhållare and Djurinnehavare are two different people
 <br>
 
+```{r Missing table2, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
-#### 9.3 PPNs WHITHIN POSTNUMMERS INTERSECTING 10 KM BUFFER
+if(exists("PPN_pro_km")) {
+  
+  ppn_post <- PPN_pro_km[c("Postnummer", 
+                           "Ppn", 
+                           "Species", 
+                           "tot_anim", 
+                           "Namn",
+                           "Kommun",
+                           "Adress",
+                           "Telefonnummer.1",
+                           "Mobilnummer")]
 
-```{r Missing table10, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
+  colnames(ppn_post) <- c("Postnr",
+                          "Ppn",
+                          "Species",
+                          "tot_anim",
+                          "Namn",
+                          "Kommun",
+                          "Adress",
+                          "Telefon",
+                          "Mobil" )
+                          
+  col_names <- names(ppn_post)
+  ppn_post[, col_names] <- lapply(ppn_post[, col_names] , factor)
+  
+  datatable(ppn_post, filter="top", rownames = FALSE,
+            options = list(pageLength = 5,
+                           columnDefs = list(
+                             list(className = 'dt-center'))
+                           )
+            )
 
-if(exists("PPN_pro10km")) {
+  } else {
   
-  ppn_post10 <- unique(PPN_pro10km[c("Postnummer", "Ppn", "Species")])
-  ppn_post10_len <- as.data.frame(table(ppn_post10$Postnummer))
-  ppn_post10 <- split(ppn_post10$Ppn, ppn_post10$Postnummer)
-  
-  ppn_post10 <- unlist(lapply(ppn_post10, function(x) {
-    paste(x, collapse=", ")
-    }))
-  
-  ppn_post10 <- data.frame(cbind(labels(ppn_post10), ppn_post10),
-                           ppn_post10_len[, 2] )
-  
-  colnames(ppn_post10) <- c("Postnummer", "PPN (list)", "PPNs (n.)")
-  
-  kable(ppn_post10, row.names = FALSE)
+  cat("* **Zip-codes intersecting buffers have no PPNs without missing coordinates**   ")
 
-} else {
-  
-  cat("* **Zip-codes intersecting the buffer of 10 km have no PPNs without missing coordinates**   ")
-  
 }
-
 ```
 <br>
+<br>
 
-### 10. SYNDROMIC SURVEILLANCE DATA (SVASSS)
-
+### 10. **SYNDROMIC SURVEILLANCE DATA** (SVASSS)
+<br>
 Data reported in the following tables are extracted from SVASSS's alarms datasets. In details, information were derived from:
 
  1. dataset of clinical data of vet visit to farms;
  2. dataset of lab samples submitted to SVA;
- 3. dataset of animal movements (CDB)
 
 <br>
 
-#### 10.1. SVASSSS DATASET OF CLINICAL RECORDS
+#### 10.1. **SVASSSS DATASET OF CLINICAL RECORDS**
 
-Information reported in the table were obtained by matching PPNs lying inside 10 km radius (or within the postnummers if PPN coordinates were missing) with PPNs present in the dataset of clinical records. Data are ordered first by Syndrome then by PPN
+Information reported in the table were obtained by matching PPNs inside the buffer area (or within the postnummer if PPN coordinates were missing) with PPNs present in the dataset of clinical records. Data are ordered first by Syndrome then by PPN
 
 <br>
 
-```{r SVASSS CLINICAL, echo=FALSE, results='asis'}
+```{r SVASSS CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
 SVASSS.SJV.alarms.data <- report_data_object()$result$SVASSS.SJV.alarms.data
 
-if(exists("PPN_pro1km")) {
+if(exists("PPN_pro_km")) {
   
-    PPN_pro1km_2 <- PPN_pro1km["Ppn"]
+    PPN_pro_km_2 <- unique(PPN_pro_km["Ppn"])
     
-} else {
+  } else {
   
-    PPN_pro1km_2 <- data.frame(Ppn = outbreak1@data$Ppn)    
+    PPN_pro_km_2 <- data.frame(Ppn = outbreak1@data$Ppn)    
 }
 
-if(exists("PPN_pro3km")) {
+
+if(exists("farms_in_buffers")) {
   
-  PPN_pro3km_2 <- PPN_pro3km["Ppn"]
+  merge_farm <- data.frame(Ppn = farms_in_buffers@data$Ppn)
+  
+  } else {
     
-} else {
-    
-  PPN_pro3km_2 <-  data.frame(Ppn=outbreak1@data$Ppn)
+  merge_farm <- data.frame(Ppn = outbreak1@data$Ppn)    
 }
 
-if(exists("PPN_pro10km")) {
+
+alla <- unique(rbind(PPN_pro_km_2, merge_farm))
+
+SVASSS.SJV <- SVASSS.SJV.alarms.data
+
+SVASSS.SJV <- SVASSS.SJV[SVASSS.SJV$PPN %in% alla$Ppn, ]
+
+if(nrow(SVASSS.SJV) != 0) {
   
-  PPN_pro10km_2 <- PPN_pro10km["Ppn"]
-
-} else {
+  SVASSS.SJV$DATUM <- as.Date(SVASSS.SJV$DATUM,
+                              format = "%m/%d/%y",
+                              origin="01/01/1970")
   
-  PPN_pro10km_2 <- data.frame(Ppn=outbreak1@data$Ppn)
-}
-
-merge_farm <- data.frame(Ppn = c(farms_in10_RT90@data$Ppn,
-                                 farms_in3_RT90@data$Ppn,
-                                 farms_in1_RT90@data$Ppn,
-                                 outbreak1@data$Ppn))
-
-merge_pro <- data.frame(Ppn = c(PPN_pro1km_2[, 1],
-                                PPN_pro3km_2[, 1],
-                                PPN_pro10km_2[, 1]))
-
-alla <- unique(rbind(merge_farm, merge_pro))
-
-SVASSS.SJV <- SVASSS.SJV.alarms.data[SVASSS.SJV.alarms.data$PPN %in% alla$Ppn, ]
-
-# dates.svala <- as.Date(svala.data$ANKOMSTDATUM, format = "%d/%m/%Y", origin="01/01/1970")
-# svala.data <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]),]
-# svala.active <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]&svala.data$active2==1),]
-# svala.passive <- svala.data[which(svala.data$PPN_original%in%herds.info()[[4]]&svala.data$active2==0),]
-    
-SVASSS.SJV2 <- SVASSS.SJV[, c(1,3,4,8,18)]
-SVASSS.SJV2 <- unique(SVASSS.SJV2)
-SVASSS.SJV2 <- SVASSS.SJV2[order(SVASSS.SJV2[, 5], 
-                                 SVASSS.SJV2[, 3],
-                                 SVASSS.SJV2[, 1]),]
-
-if(nrow(SVASSS.SJV2) != 0) {
+  SVASSS.SJV2 <- SVASSS.SJV[, c("DATUM",
+                                "prediction.Syndrome.",
+                                "DJURSLAG",
+                                "PPN",
+                                "DISTRIKTNAMN")]
+  
+  SVASSS.SJV2 <- unique(SVASSS.SJV2) # ??????
+  
+  SVASSS.SJV2 <- SVASSS.SJV2[order(SVASSS.SJV2["prediction.Syndrome."],
+                                   SVASSS.SJV2["DJURSLAG"],
+                                   SVASSS.SJV2["DATUM"]),]
+                                   
+  col_names <- names(SVASSS.SJV2)
+  SVASSS.SJV2[, col_names[2:5]] <- lapply(SVASSS.SJV2[, col_names[2:5]] , factor)
   
   colnames(SVASSS.SJV2) <- c("Datum",
-                             "Distriktnamn",
-                             "PPN",
+                             "Syndrome",
                              "Djurslag",
-                             "Syndrome")
+                             "PPN",
+                             "Distriktnamn")
 
-  datatable(SVASSS.SJV2,
-           options = list(
-                    columnDefs = list(
-                                    list(className = 'dt-center',
-                                         targets = c(0,2,3,4)))
+  datatable(SVASSS.SJV2, filter="top", rownames = FALSE,
+            options = list(
+              columnDefs = list(
+                list(className = 'dt-center',
+                     targets = c(0,2,3,4)))
            ))
- 
-} else {
   
-  cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**" )
+  } else {
+  
+  cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**", "<br>")
 
 }
 
 ```
-
 <br>
 
-#### 10.2. DATASET OF LAB SAMPLES (SVALA)
+#### 10.2. **JBV DATASET OF CLINICAL RECORDS**
 
-Information reported in the table were obtained by matching PPNs lying inside 10 km radius (or within the postnummers if PPN coordinates were missing) with PPNs present in the SVASSS dataset of lab sample records. Information about samples not related to a PPN (e.g. environmental samples) were also considered when coordinates were present.    
+```{r JBV CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
-<br>
+sjv.data <- report_data_object()$result$sjv.data
 
-```{r  SVASSS LAB, warning=FALSE, message=FALSE, echo = FALSE, results='asis', fig.height=14, fig.width=14}
+sjv.data <- sjv.data[sjv.data$PPN %in% alla$Ppn, ]
 
-SVASSS.alarms.data <- report_data_object()$result$SVASSS.alarms.data
-NUTS_03M <- report_data_object()$NUTS_03M
-
-colnames(SVASSS.alarms.data)[26] <- "Y"
-colnames(SVASSS.alarms.data)[27] <- "X"
-
-# Yes coords, No PPN
-lab_XY<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$X) |
-                           !is.na(SVASSS.alarms.data$Y) &
-                            is.na(SVASSS.alarms.data$PPN_original),]
-
-coordinates(lab_XY) = cbind(lab_XY$X, lab_XY$Y)
-proj4string(lab_XY) <- CRS("+init=epsg:3021")
-
-#only coordinates inside Swedish borders
-lab_XY_match <- lab_XY[NUTS_03M,]
-
-#only coordinates outside Swedish borders
-lab_XY_nomatch <- lab_XY[!complete.cases(over(lab_XY,NUTS_03M)),]
-
-# For coordinates switching
-# bbox <- lab_XY@bbox
-# bbox <- Polygon(bbox)
-# bbox = Polygons(list(bbox), "bbox")
-# bbox = SpatialPolygons(list(bbox))
-#                       
-# if(any(over(lab_XY, bbox))){
-#   YX_coords <- lab_XY[bbox,]
-#   lab_XY<-lab_XY[lab_XY@data$Ppn %in% YX_coords@data$Ppn]
-# }
-
-# writeOGR(lab_XY, dsn="C:/project/Garbage",layer="lab_XY",driver="ESRI Shapefile",overwrite=T)
-
-# No coords, No PPN
-lab_no_XY_PPN<-SVASSS.alarms.data[is.na(SVASSS.alarms.data$X) &
-                                  is.na(SVASSS.alarms.data$Y) &
-                                  is.na(SVASSS.alarms.data$PPN_original),]
-
-# Those are additional datasets lets see if they are useful later
-# # No coords, Yes PPN 
-# lab_PPN<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$PPN_original) &
-#                              is.na(SVASSS.alarms.data$X) &
-#                              is.na(SVASSS.alarms.data$Y),]
-# 
-# # Yes coords, Yes PPN
-# lab_XY_PPN<-SVASSS.alarms.data[!is.na(SVASSS.alarms.data$X) &
-#                            !is.na(SVASSS.alarms.data$Y) &
-#                             !is.na(SVASSS.alarms.data$PPN_original),]
-
-#  Yes PPN with and without coords
-lab_PPN_only <- SVASSS.alarms.data[!is.na(SVASSS.alarms.data$PPN_original), ]
-
-# index PPN in alla (that comprises all PPNs within the buffer or, for those PPNs without coordinates, intersecting postnummers)
-labPPN_alla_i <- lab_PPN_only$PPN %in% alla$PPN
-
-# Uppdrag with PPNs matching PPNs inside the buffers or PPNs (with missing coordinates) into the postnummers intersecting the buffers
-
-lab_PPN_only <- lab_PPN_only [labPPN_alla_i, ]
-
-# Uppdrag without PPN information intersecting the buffers
-
-all_buffers <- spRbind(buf_sp1,buf_sp3)
-all_buffers <- spRbind(all_buffers, buf_sp10)
-
-if(any(!is.na(over(lab_XY_match, all_buffers)))) {
+if(nrow(sjv.data) != 0) {
   
-  lab_XY_match_buf1 <- lab_XY_match[all_buffers, ] 
-}
-
-if(exists("lab_XY_match_buf1")) {
+  sjv.data$DATUM <- as.Date(sjv.data$DATUM, 
+                            format = "%m/%d/%y", 
+                            origin="01/01/1970")
   
-  SVASSS.lab2 <- rbind(lab_XY_match_buf1@data, lab_PPN_only)
-
-} else {
+  sjv.data <- sjv.data[, c("DATUM",
+                           "prediction.Syndrome.",
+                           "DJURSLAG",
+                           "PPN",
+                           "DISTRIKTNAMN")]
   
-  SVASSS.lab2 <- lab_PPN_only
-}
-
-if(nrow(SVASSS.lab2) != 0) {
-
-  SVASSS.lab2 <- SVASSS.lab2[, c(1,3,4,5,9)]
-  SVASSS.lab2 <- unique(SVASSS.lab2)
+  sjv.data <- unique(sjv.data)
   
-  colnames(SVASSS.lab2) <- c("Uppdrag",
-                             "Syndromic",
-                             "Djurslag", 
-                             "Species", 
-                             "PPN")
+  sjv.data <- sjv.data[order(sjv.data["prediction.Syndrome."],
+                             sjv.data["DJURSLAG"],
+                             sjv.data["DATUM"]),]
+
+  col_names <- names(sjv.data)
+  sjv.data[, col_names[2:5]] <- lapply(sjv.data[, col_names[2:5]] , factor)
   
-  datatable(SVASSS.lab2,
-           options = list(
-                    columnDefs = list(
-                                    list(className = 'dt-center',
-                                         targets = c(0,1,2,3,4)))
+  colnames(sjv.data) <- c("Datum",
+                          "Syndrome",
+                          "Djurslag",
+                          "PPN",
+                          "Distriktnamn")
+
+  datatable(sjv.data, filter="top", rownames = FALSE,
+            options = list(
+              columnDefs = list(
+                list(className = 'dt-center',
+                     targets = c(0,1,2,3,4)))
            ))
-} else {
   
-  cat("* **No SVASSS lab samples are present for the considered PPNs and time frame**" )
-       
+  } else {
+    
+    cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**", "<br>")
+
 }
 ```
-
+<br>
 <br>
 
-#### 10.3. MISSING/INCORRECT INFORMATION     
-There are __`r length(unique(lab_no_XY_PPN$UPPDRAG))`__ Uppdrag with missing coordinates and without any additional spatial information coming for the dataset lab samples     
-
-There are __`r length(unique(lab_XY_nomatch$UPPDRAG))`__ Uppdrag with coordinates located outside the Swedish borders. Possibly X and Y coordinates are switched in the original dataset.
-
-<br>
-
-### 11. URAX DATA
-
+### 11. **URAX DATA**
 <br>
 
 ```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=FALSE}
 
+urax <- report_data_object()$result$urax
+postnummer <- report_data_object()$postnummer
 
-id_urax <- (urax$PPN %in% alla$Ppn)
-urax_match <- urax[id_urax, ]
+urax$Postnummer <- sub(" ", "", urax$Postnummer) # use regexpression
+urax$Postnummer <- as.numeric(urax$Postnummer)
 
-if(nrow(urax_match) != 0) {
+# match ppns with coords
+urax_ppn <- urax[!is.na(urax$PPN), ]
+urax_match_ppn <- urax[farms_in_buffers$Ppn %in% urax$PPN, ]
+
+# match ppns without coords 
+urax_match_ppn_nc <- urax[PPN_pro_km_2$Ppn %in% urax$PPN, ]
+
+if (nrow(urax_match_ppn) != 0) {
+  urax_geo <-  farms_RT90[farms_RT90$Ppn %in% urax_match_ppn$PPN,] 
+}
+
+if (nrow(urax_match_ppn_nc) != 0) {
+  urax_post <- postnummer[postnummer@data$POSTALCODE %in% urax_match_ppn_nc$Postnummer, ]
+}
+
+# match postnummer
+urax_no_ppn <- urax[is.na(urax$PPN) & !is.na(urax$Postnummer), ]
+urax_post2 <- postnummer[postnummer@data$POSTALCODE %in% urax_no_ppn$Postnummer, ] # perso un postalcode
+
+# urax no match display in a table
+urax_table <- urax[is.na(urax$PPN) & is.na(urax$Postnummer), ]
+
+if(nrow(urax_match_ppn) != 0) {
   
-  urax_match <- urax_match[, c(4,1,2,3,9,5)]
-  urax_match <- unique(urax_match)
-  colnames(urax_match) = c("PPN",
-                           "\304RENDEID", 
-                           "DATUM", 
-                           "STATUS", 
-                           "AGENS",
-                           "ADRESS")
-  datatable(urax_match,
+  urax_table <- urax_table[, c("Svalauppdragsid",
+                               "Namn",
+                               "Adress",
+                               "Agens",
+                               "Status",
+                               "Avslutat")]
+                               
+  datatable(urax_table, rownames = FALSE, filter= "top",
            options = list(
                     columnDefs = list(
                                     list(className = 'dt-center',
                                          targets = c(0,1,2,3,4,5)))
             ))
      
-} else {
+  } else {
   
   cat("* **No URAX data within considered spatial radius and time frame**" )
 
 }
+```
+<br>
+<br>
+
+### **APPENDIX - EXTRA INFORMATION**
+<br>
+
+#### **CONTACT TRACING**  output from EpiContacTrace
+<br>
+```{r EpiContact_Report, results='asis', warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
+
+if(exists("contactTrace")) {
+#z<-readLines(paste0(contactTrace@root, ".html"))
+#invisible(cat(z))
+
+if(length(contactTrace) == 1)  {
+  
+  z <- readLines(paste0(contactTrace@root, ".html"))
+  invisible(cat(z))
+    
+  } else {
+    
+    for(i in 1:length(ppn)) {
+      z <- readLines(paste0(contactTrace[[i]]@root, ".html"))
+      invisible(cat(z))
+      }
+    }
+
+  } else {
+    
+    cat("* **No ContactTrace available for the inputed PPN**" )
+}
 
 ```
-

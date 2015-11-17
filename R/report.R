@@ -62,15 +62,13 @@ draw_map <- function(ppn,
 #' Produce an .html report
 #'
 #' Produce an .html report with information for outbreak/suspicion management
-#' @param ppn Ppn number (single scalar value)
+#' @param ppn Ppn numbers (vector of int numbers, comma separeted)
 #' @param ppn_obj Path to the list of objects output from svdc package
 #' @param firstname Firstname of the person running the report
 #' @param lastname Lastname of the person running the report
 #' @param X X-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param Y Y-coordinate of the outbreak provided by the user when ppn coordinates are missing
-#' @param buf1 Size in meters of the first buffer drawn around the ppn
-#' @param buf2 Size in meters of the second buffer drawn around the ppn
-#' @param buf3 Size in meters of the third buffer drawn around the ppn
+#' @param buffer_size Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)
 #' @return An html report
 #' @import rmarkdown
 #' @import leaflet
@@ -88,11 +86,9 @@ report <- function(ppn = 94403,
                    ppn_obj = system.file("extdata/result.rda", package = "svamp"), #save inUBUNTU the result from SVDC
                    firstname = "",
                    lastname = "",
+                   buffer_size = 1,
 #                    X = 1491350,
 #                    Y = 7160041,
-#                    buf1 = 1000,
-#                    buf2 = 3000,
-#                    buf3 = 10000,
                    template = "report",
                    format = c("knitr")) {
 
@@ -162,9 +158,8 @@ report <- function(ppn = 94403,
   assign("lastname", lastname, envir = .svamp_env)
 #   assign("X", X, envir = .svamp_env)
 #   assign("Y", Y, envir = .svamp_env)
-#   assign("buf1", buf1, envir = .svamp_env)
-#   assign("buf2", buf2, envir = .svamp_env)
-#   assign("buf3", buf3, envir = .svamp_env)
+  assign("buffer_size", buffer_size, envir = .svamp_env)
+
 
   template <- system.file(file.path(format, paste0(template, ".Rmd")), package = "svamp")
 
