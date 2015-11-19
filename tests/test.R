@@ -3,9 +3,10 @@ library(svamp)
 ## test_1
 
 a <- report(222240, ppn_obj = "//UBUNTU1/share/result.rda")
-a <- report(222240, ppn_obj = "//UBUNTU1/share/result.rda")
+report(c(222240, 94403), ppn_obj = "//UBUNTU1/share/result.rda", view = FALSE)
 a <- report(ppn = c(11732,  40196,  88930, 222286),
             ppn_obj = "//UBUNTU1/share/result.rda")
+
 
 
 

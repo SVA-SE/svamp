@@ -315,46 +315,7 @@ buffer <- buffer_ppn(outbreak, buffer_size)
 
 proj4string(buffer) <- CRS("+init=epsg:3021")
 
-hole <- function(buffer_polygons) {
-
-  if (length(buffer_polygons) == 0 | !exists("buffer_polygons")) {
-  stop("The buffers object is empty or doesn't exist")
-  }
-
-  if (length(buffer_polygons) == 1) {
-    buffer_sp <- buffer_polygons[1]
-    buffer_sp@polygons[[1]]@ID <- paste0(buffer_size[1])
-    df <- data.frame(buffer = buffer_sp@polygons[[1]]@ID,
-                                       row.names=buffer_sp@polygons[[1]]@ID)
-    buffer_sp <- SpatialPolygonsDataFrame(buffer_sp, df)
-    return(buffer_sp)
-    }
-
-  if (length(buffer_polygons) > 1) {
-    buf_sp1 <- buffer_polygons[1]
-    buf_sp1@polygons[[1]]@ID <- paste0(buffer_size[1])
-    df <- data.frame(buffer = buf_sp1@polygons[[1]]@ID,
-                                       row.names=buf_sp1@polygons[[1]]@ID)
-    buf_sp1 <- SpatialPolygonsDataFrame(buf_sp1, df)
-
-    buffers <- do.call("rbind",
-                    lapply(rev(2:length(buffer_polygons)), function (x) {
-                      a <- gDifference(buffer_polygons[x], buffer_polygons[x-1])
-                      a@polygons[[1]]@ID <- buffer_polygons@polygons[[x]]@ID
-                      df1 <- data.frame(buffer = a@polygons[[1]]@ID,
-                                        row.names = a@polygons[[1]]@ID)
-                      spdf <-  SpatialPolygonsDataFrame(a, df1)
-
-                      return(spdf)
-
-                      }))
-
-    buffer_sp <- rbind(buffers, buf_sp1)
-
-    }
-}
-
-buffer_sp <- hole(buffer)
+buffer_sp <- hole(buffer, buffer_size)
 ```
 
 ```{r FarmsInBuffers, results='asis', echo=FALSE, eval=TRUE}
@@ -505,18 +466,9 @@ invisible(lapply(b, plot_graph))
 
 #Calculate distance matrix to assign farms to outbreaks farm
 
-#Euclidean distance matrix
-DistMatrix = function(farms_in_buffers, longlat = FALSE) {
-  distance <- sapply(1:length(farms_in_buffers[[1]]),
-    function(x) {spDistsN1(coordinates(outbreak),
-                           coordinates(farms_in_buffers[x,]),
-                           longlat)})
-  return(distance)
-}
-
 if (length(ppn) > 1) {
 
-  dm_farms_in1 <- DistMatrix(farms_in_buffers)
+  dm_farms_in1 <- DistMatrix(farms_in_buffers, longlat = FALSE, outbreak)
   dm_farms_in1 <- as.data.frame(t(dm_farms_in1))
   outbreak_ppn <- as.character(outbreak@data$Ppn)
   farms_ppn <- as.character(farms_in_buffers@data$Ppn)
