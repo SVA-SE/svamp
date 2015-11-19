@@ -551,13 +551,14 @@ if (length(ppn) > 1) {
 } else {
   
     farms_in_buffers2 <- farms_in_buffers@data
+    farms_in_buffers2 <- data.frame(farms_in_buffers2, nearest = as.factor(ppn))
 }
 ```
 
 
 ```{r PPNsDistance2, results='asis', echo=FALSE, eval=TRUE}
 
-farms_in_buffers <- spTransform(farms_in_buffers, CRS("+init=epsg:3021")) #??????
+# farms_in_buffers <- spTransform(farms_in_buffers, CRS("+init=epsg:3021")) #??????
 
 col_names <- names(farms_in_buffers2)
 farms_in_buffers2[, col_names] <- lapply(farms_in_buffers2[, col_names] , factor)
@@ -729,19 +730,19 @@ g3 <- paste0("<br>", "**8a. PPNs' NUMBER OF ANIMALS WITHIN BUFFER** ", names(n_a
 
 ### 9. OWNERS OF PPNs WITHIN RESTRICTION ZONES 
 
-```{r PPNs Anim owner, results='asis', echo=FALSE, eval=FALSE}
+```{r PPNs Anim owner, results='asis', echo=FALSE, eval=TRUE}
 
 n_anim_own_rz <- PPN[PPN$Ppn %in% farms_in_buffers2$Ppn, ]
 farms_in_buffers4 <- farms_in_buffers2[, c("Ppn", "buffer", "nearest")]
 
 n_anim_own_rz <- merge(n_anim_own_rz, farms_in_buffers4, by = "Ppn")
 
-n_anim_own_rz <- n_anim_own_rz[,c("Ppn","Namn","Adress.1", "Coadress","Telefonnummer.1",
+n_anim_own_rz <- n_anim_own_rz[,c("Ppn","Namn","Adress.1","Telefonnummer.1",
                                   "Mobilnummer",  "Epost",  "buffer", "nearest")]
 
 n_anim_own_rz <- n_anim_own_rz[!duplicated(n_anim_own_rz),]
 
-colnames(n_anim_own_rz) <-   c("Ppn","Namn", "Adress", "Coadress", "Telefon", "Mobil",
+colnames(n_anim_own_rz) <-   c("Ppn","Namn", "Adress","Telefon", "Mobil",
                            "Epost", "buffer", "near_out")
 
 col_names <- names(n_anim_own_rz)
@@ -757,9 +758,9 @@ n_anim_own_rz <- lapply(n_anim_own_rz, function(x) {
   )
 
 out4 = NULL
-for (p in 1:length(n_anim_own_rz)) {
-g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_rz[p]), "km", "<br>", "<br>")
-  knit_expanded4 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_own_rz[[", p, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+for (h in 1:length(n_anim_own_rz)) {
+g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_rz[h]), "km", "<br>", "<br>")
+  knit_expanded4 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_own_rz[[", h, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out4 = c(out4, g4, knit_expanded4)
   
@@ -1230,14 +1231,6 @@ urax_match_ppn <- urax_ppn[ urax_ppn$PPN %in% farms_in_buffers@data$Ppn, ]
 urax_ppn_nc <- urax[is.na(urax$PPN), ]
 urax_match_ppn_nc <- urax_ppn_nc[PPN_pro_km_2$Ppn %in% urax_ppn_nc$PPN, ]
 
-if (nrow(urax_match_ppn) != 0) {
-  urax_geo <-  farms_RT90[farms_RT90$Ppn %in% urax_match_ppn$PPN,] 
-}
-
-if (nrow(urax_match_ppn_nc) != 0) {
-  urax_post <- postnummer[postnummer@data$POSTALCODE %in% urax_match_ppn_nc$Postnummer, ]
-}
-
 # match postnummer
 urax_no_ppn <- urax[is.na(urax$PPN) & !is.na(urax$Postnummer), ]
 urax_post2 <- postnummer[postnummer@data$POSTALCODE %in% urax_no_ppn$Postnummer, ] # perso un postalcode
@@ -1247,6 +1240,15 @@ urax_table <- urax[is.na(urax$PPN) & is.na(urax$Postnummer), ]
 
 # map 
 
+if (nrow(urax_match_ppn) != 0) {
+  urax_geo <-  farms_RT90[farms_RT90$Ppn %in% urax_match_ppn$PPN,] 
+}
+
+if (nrow(urax_match_ppn_nc) != 0) {
+  urax_post <- postnummer[postnummer@data$POSTALCODE %in% urax_match_ppn_nc$Postnummer, ]
+}
+
+## continue
 
 if(nrow(urax_match_ppn) != 0) {
   
