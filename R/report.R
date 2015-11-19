@@ -4,13 +4,13 @@
 #' @param outbreak Scalar or numeric vector with the PPNs number to draw
 #' @return A .jpeg? map
 #' @keywords internal
-draw_map <- function(ppn, 
+draw_map <- function(ppn,
                      ppn_obj = system.file("extdata/result.rda",
                                            package = "svamp")) {
-  
+
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
   NUTS_03M <- report_data_object()$NUTS_03M
-   
+
   # load results from svdc package
   load(ppn_obj)
   farms_RT90 <- result$farms_RT90
@@ -18,47 +18,47 @@ draw_map <- function(ppn,
 
   outbreak <- subset(farms_RT90, farms_RT90$Ppn == ppn)
   NUTS_03M <- NUTS_03M[NUTS_03M$STAT_LEVL_ == 3, 1:2]
-   
-  # drop levels without data in NUTS_ID 
-  NUTS_03M@data$NUTS_ID <- droplevels(NUTS_03M@data$NUTS_ID) 
-  
+
+  # drop levels without data in NUTS_ID
+  NUTS_03M@data$NUTS_ID <- droplevels(NUTS_03M@data$NUTS_ID)
+
   NUTS_03M@data$Lan <- nuts_label$Swedish[match(as.character(NUTS_03M@data$NUTS_ID),
                                                 nuts_label$NUTS)]
-  
+
   # Check for points falling outside Swedish border
   if(all(!is.na(over(outbreak, NUTS_03M)))) {
-    
+
     lan <- over(outbreak, NUTS_03M)
     lan <- NUTS_03M[NUTS_03M@data$NUTS_ID %in% lan$NUTS_ID, ]
     plot(NUTS_03M, axes = T)
     plot(lan, add = T, col = "yellow")
-    
-    
+
+
     points(outbreak, pch = 19, col = "red", cex = 1)
-    
+
     # Add labels to the polygons
-    
+
     invisible(text(coordinates(NUTS_03M),
-                   labels = as.character(NUTS_03M@data$Lan), 
+                   labels = as.character(NUTS_03M@data$Lan),
                    cex = 0.8))
-    
+
     title(expression(paste("Geographic location of the PPN under investigation")))
-    
+
     legend("bottomright",
-           cex = 1.3, 
-           "PPN location", 
-           pch = 19, 
+           cex = 1.3,
+           "PPN location",
+           pch = 19,
            pt.cex = 1.2,
            col = "red",
            bty = "n")
-    
+
   } else {
-    
+
     plot(1,1,col = "white")
     text(1,1,"Some coordinates fall outside the Swedish borders")
   }
 }
-  
+
 #' Produce an .html report
 #'
 #' Produce an .html report with information for outbreak/suspicion management
@@ -69,6 +69,7 @@ draw_map <- function(ppn,
 #' @param X X-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param Y Y-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param buffer_size Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)
+#' @param view Make TRUE to pop a browser
 #' @return An html report
 #' @import rmarkdown
 #' @import leaflet
@@ -90,9 +91,10 @@ report <- function(ppn = 94403,
 #                    X = 1491350,
 #                    Y = 7160041,
                    template = "report",
-                   format = c("knitr")) {
+                   format = c("knitr"),
+                   view = FALSE) {
 
-    
+
    ## Check to make sure the environment is empty
 
   if (length(ls(envir=.svamp_env))) {
@@ -105,10 +107,10 @@ report <- function(ppn = 94403,
 
 #   if(missing(firstname))
 #     stop("Missing 'firstname'")
-# 
+#
 #   if(missing(lastname))
 #     stop("Missing 'lastname'")
-# 
+#
 #   if(missing(template))
 #     stop("Missing 'template'")
 
@@ -118,17 +120,17 @@ report <- function(ppn = 94403,
 #                          uid = "Svaladw",
 #                          pwd = "svaladwpw",
 #                          believeNRows=FALSE)
-# 
+#
 #   urax <- sqlQuery(connect, query = " SELECT *
 #                                     FROM
 #                                     URAX.SJUKDOMSSTATUSV")
-# 
+#
 #   odbcClose(connect)
 
 
   ## Load the output of svsc package (load a list called "result" output of svdc package)
   load(ppn_obj)
-  
+
   ## Check arguments
   if(missing(ppn)) {
     stop("'ppn' is missing")
@@ -138,13 +140,13 @@ report <- function(ppn = 94403,
   if(!is.numeric(ppn)) {
     stop("Only numeric value are admitted")
   }
-  
+
   ## Check that the inputed ppns are present
   if (!all(ppn %in% result$PPN$Ppn)) {
     stop('One or more PPNs are not present in the database.
          Please, double check the imputed PPNs')
   }
-  
+
   ## Load spatialpolygondataframe sticked in the ../svamp/data folder
 
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
@@ -167,12 +169,13 @@ report <- function(ppn = 94403,
 
   outputfile_html <- rmarkdown::render(template, output_dir = td)
 
-#  return(readLines(outputfile_html))
-
-
-  a <- normalizePath(file.path(outputfile_html), winslash = "/")
-  return(a)
-
+  if(view) {
+      a <- normalizePath(file.path(outputfile_html), winslash = "/")
+      utils::browseURL(a)
+  }
+  if(!(view)) {
+      return(readLines(outputfile_html))
+  }
 }
 
 .svamp_env <- new.env()

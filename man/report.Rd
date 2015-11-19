@@ -6,7 +6,7 @@
 \usage{
 report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
   "svamp"), firstname = "", lastname = "", buffer_size = 1,
-  template = "report", format = c("knitr"))
+  template = "report", format = c("knitr"), view = FALSE)
 }
 \arguments{
 \item{ppn}{Ppn numbers (vector of int numbers, comma separeted)}
@@ -18,6 +18,8 @@ report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
 \item{lastname}{Lastname of the person running the report}
 
 \item{buffer_size}{Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)}
+
+\item{view}{Make TRUE to pop a browser}
 
 \item{X}{X-coordinate of the outbreak provided by the user when ppn coordinates are missing}
 
