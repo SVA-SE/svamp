@@ -1,13 +1,13 @@
 Package: svamp
-Title: Tools for support in outbreak management and suspicion investigation 
+Title: Tools for support in outbreak management and suspicion investigation
 Version: 0.1
 Date: 2015-09-14
 Author: Giampaolo Cocca, Thomas Rosendal
 Maintainer: Giampaolo Cocca <giampaolo.cocca@sva.se>
 Description: svamp is a package that builds on Rmarkdown.
-             Providing PPN and buffers size as input information a report with 
-             relevant information for outbreak management and suspicion investigation
-             within the area under investigation.
+    Providing PPN and buffers size as input information a report with
+    relevant information for outbreak management and suspicion investigation
+    within the area under investigation.
 License: Internal SVA code
 Type: Package
 LazyLoad: yes
@@ -27,3 +27,5 @@ Depends:
     R(>= 3.0.0)
 Collate:
     'report.R'
+    'buffer.R'
+RoxygenNote: 5.0.1
