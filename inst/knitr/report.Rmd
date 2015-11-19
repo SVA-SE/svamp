@@ -567,9 +567,13 @@ farms <- split(farms_in_buffers2,
                       levels=rev(levels(farms_in_buffers2$buffer))),
                drop = TRUE)
 
+farms <- lapply(farms, function(x) { 
+  x["buffer"] <- NULL; x }
+  )
+
 out2 = NULL
 for (k in 1:length(farms)) {
-g2 <- paste0("<br>", "<br>", "**LIST OF FARMS WITHIN BUFFER **", names(farms[k]), "km", "<br>", "<br>")
+g2 <- paste0("<br>", "#### 7a. LIST OF PPNs WITHIN BUFFER", names(farms[k]), "km", "<br>", "<br>")
   knit_expanded2 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(farms[[", k, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out2 = c(out2, g2, knit_expanded2)
@@ -679,40 +683,94 @@ addLegend("bottomright",
 <br>
 <br>
 
-##### **LIST AND NUMBER OF ANIMALS PER PPN WITHIN RESTRICTION ZONES** 
+### 8. NUMBER OF ANIMALS OF PPNs WITHIN RESTRICTION ZONES 
 <br>
 ```{r PPNs Anim number, results='asis', echo=FALSE, eval=TRUE}
 
-n_anim_rz <- PPN[PPN$Ppn %in% farms_in_buffers@data$Ppn, ]
+n_anim_rz <- PPN[PPN$Ppn %in% farms_in_buffers2$Ppn, ]
+farms_in_buffers3 <- farms_in_buffers2[, c("Ppn", "buffer", "nearest")]
 
-n_anim_rz <- n_anim_rz[c("Ppn", 
-                           "Species", 
-                           "Typ", 
-                           "Namn",
-                           "Kommun",
-                           "Adress",
-                           "Telefonnummer.1",
-                           "Mobilnummer")]
+n_anim_rz <- merge(n_anim_rz, farms_in_buffers3, by = "Ppn")
+
+n_anim_rz <- n_anim_rz[c("Ppn", "Species", "Typ", "tot_anim", "buffer", "nearest")]
+n_anim_rz <- n_anim_rz[!duplicated(n_anim_rz),]
 
 colnames(n_anim_rz) <-   c("Ppn",
                            "Species",
                            "Typ",
-                           "Namn",
-                           "Kommun",
-                           "Adress",
-                           "Telefon",
-                           "Mobil")
+                           "Antal",
+                           "buffer",
+                           "near_out")
 
 col_names <- names(n_anim_rz)
 n_anim_rz[, col_names] <- lapply(n_anim_rz[, col_names] , factor)
 
- datatable(n_anim_rz, filter='top', rownames =FALSE,
-           escape = FALSE, options = list(pageLength = 5))
+n_anim_rz <- split(n_anim_rz, 
+               factor(n_anim_rz$buffer,
+                      levels=rev(levels(n_anim_rz$buffer))),
+               drop = TRUE)
+
+n_anim_rz <- lapply(n_anim_rz, function(x) { 
+  x["buffer"] <- NULL; x }
+  )
+
+out3 = NULL
+for (l in 1:length(n_anim_rz)) {
+g3 <- paste0("<br>", "**8a. PPNs' NUMBER OF ANIMALS WITHIN BUFFER** ", names(n_anim_rz[l]), "km", "<br>", "<br>")
+  knit_expanded3 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_rz[[", l, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+
+  out3 = c(out3, g3, knit_expanded3)
+  
+  }
 
 ```
 
+`r paste(knit(text = out3), collapse = '\n')`
 
-### 8. **ANALYSIS OF CONTACTS** (EpiContactTrace)
+### 9. OWNERS OF PPNs WITHIN RESTRICTION ZONES 
+
+```{r PPNs Anim owner, results='asis', echo=FALSE, eval=FALSE}
+
+n_anim_own_rz <- PPN[PPN$Ppn %in% farms_in_buffers2$Ppn, ]
+farms_in_buffers4 <- farms_in_buffers2[, c("Ppn", "buffer", "nearest")]
+
+n_anim_own_rz <- merge(n_anim_own_rz, farms_in_buffers4, by = "Ppn")
+
+n_anim_own_rz <- n_anim_own_rz[,c("Ppn","Namn","Adress.1", "Coadress","Telefonnummer.1",
+                                  "Mobilnummer",  "Epost",  "buffer", "nearest")]
+
+n_anim_own_rz <- n_anim_own_rz[!duplicated(n_anim_own_rz),]
+
+colnames(n_anim_own_rz) <-   c("Ppn","Namn", "Adress", "Coadress", "Telefon", "Mobil",
+                           "Epost", "buffer", "near_out")
+
+col_names <- names(n_anim_own_rz)
+n_anim_own_rz[, col_names] <- lapply(n_anim_own_rz[, col_names] , factor)
+
+n_anim_own_rz <- split(n_anim_own_rz, 
+               factor(n_anim_own_rz$buffer,
+                      levels=rev(levels(n_anim_own_rz$buffer))),
+               drop = TRUE)
+
+n_anim_own_rz <- lapply(n_anim_own_rz, function(x) { 
+  x["buffer"] <- NULL; x }
+  )
+
+out4 = NULL
+for (p in 1:length(n_anim_own_rz)) {
+g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_rz[p]), "km", "<br>", "<br>")
+  knit_expanded4 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_own_rz[[", p, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+
+  out4 = c(out4, g4, knit_expanded4)
+  
+  }
+
+```
+
+`r paste(knit(text = out4), collapse = '\n')`
+
+
+### 10. **ANALYSIS OF CONTACTS** (EpiContactTrace)
 
 The analysis covers the last __365__ days from the date of report generation (__`r Sys.Date()`__).   
 The most recent movements reported into the database are from __`r unique(max(report_data_object()$result$ani_move$t))`__.    
@@ -743,7 +801,7 @@ Report(contactTrace)
 <br>
 <br>
 
-### 9 **MISSING COORDINATES**
+### 11. **MISSING COORDINATES**
 <br>
 ```{r Missing, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
@@ -934,7 +992,7 @@ if(exists("intersec_km_NM")) {
 ```
 <br>
 
-### 9.1 List of PPN records with missing coordinates within postnummers
+### 11.1 List of PPN records with missing coordinates within postnummers
 <br>
 ```{r Missing table1, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
@@ -963,7 +1021,7 @@ if(exists("PPN_pro_km")) {
 ```
 <br>
 
-### 9.2 Table of PPN records with missing coordinates within postnummers
+### 11.2 Table of PPN records with missing coordinates within postnummers
 <br>
 Duplicated PPNs are present when Djurhållare and Djurinnehavare are two different people
 <br>
@@ -1011,7 +1069,7 @@ if(exists("PPN_pro_km")) {
 <br>
 <br>
 
-### 10. **SYNDROMIC SURVEILLANCE DATA** (SVASSS)
+### 12. **SYNDROMIC SURVEILLANCE DATA** (SVASSS)
 <br>
 Data reported in the following tables are extracted from SVASSS's alarms datasets. In details, information were derived from:
 
@@ -1020,7 +1078,7 @@ Data reported in the following tables are extracted from SVASSS's alarms dataset
 
 <br>
 
-#### 10.1. **SVASSSS DATASET OF CLINICAL RECORDS**
+#### 12.1. **SVASSSS DATASET OF CLINICAL RECORDS**
 
 Information reported in the table were obtained by matching PPNs inside the buffer area (or within the postnummer if PPN coordinates were missing) with PPNs present in the dataset of clinical records. Data are ordered first by Syndrome then by PPN
 
@@ -1099,7 +1157,7 @@ if(nrow(SVASSS.SJV) != 0) {
 ```
 <br>
 
-#### 10.2. **JBV DATASET OF CLINICAL RECORDS**
+#### 12.2. **JBV DATASET OF CLINICAL RECORDS**
 
 ```{r JBV CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
@@ -1150,7 +1208,7 @@ if(nrow(sjv.data) != 0) {
 <br>
 <br>
 
-### 11. **URAX DATA**
+### 13. **URAX DATA**
 <br>
 
 ```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=FALSE}
@@ -1192,18 +1250,14 @@ if(nrow(urax_match_ppn) != 0) {
                                "Status",
                                "Avslutat")]
                                
-  datatable(urax_table, rownames = FALSE, filter= "top",
-           options = list(
-                    columnDefs = list(
-                                    list(className = 'dt-center',
-                                         targets = c(0,1,2,3,4,5)))
-            ))
+  datatable(urax_table, rownames = FALSE, filter= "top")
      
   } else {
   
   cat("* **No URAX data within considered spatial radius and time frame**" )
 
 }
+
 ```
 <br>
 <br>
