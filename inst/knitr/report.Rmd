@@ -769,7 +769,6 @@ g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_r
 
 `r paste(knit(text = out4), collapse = '\n')`
 
-
 ### 10. **ANALYSIS OF CONTACTS** (EpiContactTrace)
 
 The analysis covers the last __365__ days from the date of report generation (__`r Sys.Date()`__).   
@@ -1069,6 +1068,32 @@ if(exists("PPN_pro_km")) {
 <br>
 <br>
 
+```{r list all PPN, echo=FALSE, results='asis', eval=TRUE}
+
+# create a list of all PPNs to match with SVASSS, SJV and urax data
+
+if(exists("PPN_pro_km")) {
+  
+    PPN_pro_km_2 <- unique(PPN_pro_km["Ppn"])
+    
+  } else {
+  
+    PPN_pro_km_2 <- data.frame(Ppn = outbreak1@data$Ppn)    
+}
+
+if(exists("farms_in_buffers")) {
+  
+  merge_farm <- data.frame(Ppn = farms_in_buffers@data$Ppn)
+  
+  } else {
+    
+  merge_farm <- data.frame(Ppn = outbreak1@data$Ppn)    
+}
+
+alla <- unique(rbind(PPN_pro_km_2, merge_farm))
+
+```
+
 ### 12. **SYNDROMIC SURVEILLANCE DATA** (SVASSS)
 <br>
 Data reported in the following tables are extracted from SVASSS's alarms datasets. In details, information were derived from:
@@ -1086,29 +1111,7 @@ Information reported in the table were obtained by matching PPNs inside the buff
 
 ```{r SVASSS CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
-SVASSS.SJV.alarms.data <- report_data_object()$result$SVASSS.SJV.alarms.data
-
-if(exists("PPN_pro_km")) {
-  
-    PPN_pro_km_2 <- unique(PPN_pro_km["Ppn"])
-    
-  } else {
-  
-    PPN_pro_km_2 <- data.frame(Ppn = outbreak1@data$Ppn)    
-}
-
-
-if(exists("farms_in_buffers")) {
-  
-  merge_farm <- data.frame(Ppn = farms_in_buffers@data$Ppn)
-  
-  } else {
-    
-  merge_farm <- data.frame(Ppn = outbreak1@data$Ppn)    
-}
-
-
-alla <- unique(rbind(PPN_pro_km_2, merge_farm))
+SVASSS.SJV.alarms.data <- result$SVASSS.SJV.alarms.data
 
 SVASSS.SJV <- SVASSS.SJV.alarms.data
 
@@ -1221,10 +1224,11 @@ urax$Postnummer <- as.numeric(urax$Postnummer)
 
 # match ppns with coords
 urax_ppn <- urax[!is.na(urax$PPN), ]
-urax_match_ppn <- urax[farms_in_buffers$Ppn %in% urax$PPN, ]
+urax_match_ppn <- urax_ppn[ urax_ppn$PPN %in% farms_in_buffers@data$Ppn, ]
 
 # match ppns without coords 
-urax_match_ppn_nc <- urax[PPN_pro_km_2$Ppn %in% urax$PPN, ]
+urax_ppn_nc <- urax[is.na(urax$PPN), ]
+urax_match_ppn_nc <- urax_ppn_nc[PPN_pro_km_2$Ppn %in% urax_ppn_nc$PPN, ]
 
 if (nrow(urax_match_ppn) != 0) {
   urax_geo <-  farms_RT90[farms_RT90$Ppn %in% urax_match_ppn$PPN,] 
@@ -1240,6 +1244,9 @@ urax_post2 <- postnummer[postnummer@data$POSTALCODE %in% urax_no_ppn$Postnummer,
 
 # urax no match display in a table
 urax_table <- urax[is.na(urax$PPN) & is.na(urax$Postnummer), ]
+
+# map 
+
 
 if(nrow(urax_match_ppn) != 0) {
   
