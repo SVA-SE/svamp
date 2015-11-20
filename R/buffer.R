@@ -21,8 +21,8 @@ buffer_ppn <- function(ppn, buffer_size) {
 ##' Generate a polygon set with holes
 ##'
 ##' @title hole
-##' @param buffer_polygons
-##' @param buffer_size
+##' @param buffer_polygons A spatial polygons object
+##' @param buffer_size A vector of integers
 ##' @import sp
 ##' @import rgeos
 ##' @return spatial polygon dataframe

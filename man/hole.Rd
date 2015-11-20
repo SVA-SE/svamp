@@ -6,6 +6,11 @@
 \usage{
 hole(buffer_polygons, buffer_size)
 }
+\arguments{
+\item{buffer_polygons}{A spatial polygons object}
+
+\item{buffer_size}{A vector of integers}
+}
 \value{
 spatial polygon dataframe
 }

@@ -1,9 +1,9 @@
 ##' Calculate the distance between farms
 ##'
 ##' @title DistMatrix
-##' @param farms_in_buffers
-##' @param longlat
-##' @param outbreak
+##' @param farms_in_buffers A spatial point data.frame of farms
+##' @param longlat coordinate type
+##' @param outbreak the reference farm(s)
 ##' @import sp
 ##' @return Matrix
 ##' @author Giampaolo Cocca

@@ -6,6 +6,13 @@
 \usage{
 DistMatrix(farms_in_buffers, longlat = FALSE, outbreak)
 }
+\arguments{
+\item{farms_in_buffers}{A spatial point data.frame of farms}
+
+\item{longlat}{coordinate type}
+
+\item{outbreak}{the reference farm(s)}
+}
 \value{
 Matrix
 }
