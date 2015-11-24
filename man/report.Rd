@@ -5,7 +5,7 @@
 \title{Produce an .html report}
 \usage{
 report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
-  "svamp"), firstname = "", lastname = "", buffer_size = 1,
+  "svamp"), firstname = "", lastname = "", buffer_size = 1, days = 90,
   template = "report", format = c("knitr"), view = FALSE)
 }
 \arguments{
@@ -18,6 +18,8 @@ report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
 \item{lastname}{Lastname of the person running the report}
 
 \item{buffer_size}{Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)}
+
+\item{days}{Set the number of days to use in EpiContactTrace (max 180)}
 
 \item{view}{Make TRUE to pop a browser}
 
