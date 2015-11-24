@@ -69,6 +69,7 @@ draw_map <- function(ppn,
 #' @param X X-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param Y Y-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param buffer_size Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)
+#' @param days Set the number of days to use in EpiContactTrace (max 180)
 #' @param view Make TRUE to pop a browser
 #' @return An html report
 #' @import rmarkdown
@@ -83,11 +84,12 @@ draw_map <- function(ppn,
 #' @import maptools
 #' @export
 
-report <- function(ppn = 94403,
+report <- function(ppn,
                    ppn_obj = system.file("extdata/result.rda", package = "svamp"), #save inUBUNTU the result from SVDC
                    firstname = "",
                    lastname = "",
-                   buffer_size = 1,
+                   buffer_size = c(3, 10),
+                   days = 90,
 #                    X = 1491350,
 #                    Y = 7160041,
                    template = "report",
@@ -147,6 +149,25 @@ report <- function(ppn = 94403,
          Please, double check the imputed PPNs')
   }
 
+  ## Check that the inputed ppn is numeric
+  if(!is.numeric(buffer_size)) {
+    stop("Only numeric value are admitted")
+  }
+  ## Check that the inputed ppns are present
+  if (any(buffer_size > 50)) {
+    stop('The maximum radius for the buffer is 50km')
+  }
+
+  ## Check that the inputed ppn is numeric
+  if(!is.numeric(days)) {
+    stop("Only numeric value are admitted")
+  }
+  ## Check that the inputed ppns are present
+  if (days > 180) {
+    stop('The maximum number of days is 180. To go more back in time
+         use the Movements App')
+  }
+
   ## Load spatialpolygondataframe sticked in the ../svamp/data folder
 
   data(NUTS_03M, package = "svamp", envir = .svamp_env)
@@ -158,6 +179,7 @@ report <- function(ppn = 94403,
   assign("result", result, envir = .svamp_env)
   assign("firstname", firstname, envir = .svamp_env)
   assign("lastname", lastname, envir = .svamp_env)
+  assign("days", days, envir = .svamp_env)
 #   assign("X", X, envir = .svamp_env)
 #   assign("Y", Y, envir = .svamp_env)
   assign("buffer_size", buffer_size, envir = .svamp_env)

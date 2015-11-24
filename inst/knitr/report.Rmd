@@ -81,11 +81,11 @@ LeafletMap1 %>% addCircleMarkers(data = outbreak1_wgs,
                                  fillColor = "red",
                                  fillOpacity = 1,
                                  popup = pop_out,
-                                 group = "Outbreak")  %>%
+                                 group = "PPNs")  %>%
 
 addLayersControl(
     baseGroups = c("OSM", "CartoDB", "Toner Lite"),
-    overlayGroups = "Outbreak",
+    overlayGroups = "PPNs",
     options = layersControlOptions(collapsed = FALSE)) %>%
 
 addLegend("bottomright",
@@ -156,20 +156,18 @@ datatable(outbreak_own, filter='top', rownames =FALSE,
 <br>
 ```{r herds/anim_outbreak, results='asis', fig.height= 4, fig.width=12, echo=FALSE}
 
-
 outb_in_PPN <-  PPN[PPN$Ppn %in% outbreak@data$Ppn, ]
 
-outb_in_PPN2 <- outb_in_PPN [c("Ppn",
-                              "Species",
-                              "Typ",
-                              "Typ.1",
-                              "tot_anim")]
+outb_in_PPN <-  outb_in_PPN [c("Ppn",
+                               "Species",
+                               "Typ",
+                               "tot_anim")]
 
 outb_in_PPN <- outb_in_PPN[!duplicated(outb_in_PPN [c("Ppn",
                                                       "Species",
                                                       "Typ",
-                                                      "Typ.1",
                                                       "tot_anim")]),]
+outb_in_PPN2 <- outb_in_PPN
 
 outb_in_PPN$Ppn <- as.factor(outb_in_PPN$Ppn)
 
@@ -262,9 +260,8 @@ if (any(is.na(outbreak_no_sp$tot_anim))) {
 <br>
 
 ### 4. **VETERINARY DISTRICTS INFORMATION**
-<br>
 
-```{r VetDistrictDist, warning=FALSE, message=FALSE, echo = FALSE, results='asis'}
+```{r VetDistrictDist, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=TRUE}
 
 district_geo_RT90 <- report_data_object()$result$district_geo_RT90
 
@@ -353,7 +350,6 @@ kable(z, align = "c")
 ```
 <br>
 
-
 ### 6. **SUMMARY STATISTICS FOR ANIMALS WITHIN RESTICTION ZONES**
 <br>
 ```{r SumAnimal, warning=FALSE, results='asis',message=FALSE, echo=FALSE, eval=TRUE}
@@ -424,7 +420,7 @@ plot_graph <- function(list_df) {
       par(mfrow = c(1,2), las = 2)
 
       b1a <- barplot(counts,
-                     main = paste("Number of animals by species (buffer",
+                     main = paste("Number of herds by species (buffer",
                                   unique(list_df$buffer), "km)"),
                      cex.main = 0.9,
                      ylab = "Number of herds",
@@ -513,7 +509,7 @@ farms <- lapply(farms, function(x) {
 
 out2 = NULL
 for (k in 1:length(farms)) {
-g2 <- paste0("<br>", "#### 7a. LIST OF PPNs WITHIN BUFFER", names(farms[k]), "km", "<br>", "<br>")
+g2 <- paste0("<br>", "**7a. LIST OF PPNs WITHIN BUFFER **", names(farms[k]), "km", "<br>", "<br>")
   knit_expanded2 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(farms[[", k, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out2 = c(out2, g2, knit_expanded2)
@@ -656,7 +652,7 @@ n_anim_rz <- lapply(n_anim_rz, function(x) {
 
 out3 = NULL
 for (l in 1:length(n_anim_rz)) {
-g3 <- paste0("<br>", "**8a. PPNs' NUMBER OF ANIMALS WITHIN BUFFER** ", names(n_anim_rz[l]), "km", "<br>", "<br>")
+g3 <- paste0("<br>", "**8a. PPNs' NUMBER OF ANIMALS WITHIN BUFFER **", names(n_anim_rz[l]), "km", "<br>", "<br>")
   knit_expanded3 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_rz[[", l, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out3 = c(out3, g3, knit_expanded3)
@@ -711,7 +707,7 @@ g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_r
 
 ### 10. **ANALYSIS OF CONTACTS** (EpiContactTrace)
 
-The analysis covers the last __365__ days from the date of report generation (__`r Sys.Date()`__).
+The analysis covers the last __`r report_data_object()$days`__ days from the date of report generation (__`r Sys.Date()`__).
 The most recent movements reported into the database are from __`r unique(max(report_data_object()$result$ani_move$t))`__.
 Run your own contact analysis setting different parameters (click the [link](http://ubuntu1:3838/sample-apps/trace))
 
@@ -723,7 +719,8 @@ OBS! Animal movement data may be reported to Jordbruksverket as late as 7 days a
 
 library(EpiContactTrace)
 
-transfers <- result$ani_move
+transfers <- report_data_object()$result$ani_move
+days <- report_data_object()$days
 outbreak <- outbreak@data$Ppn
 
 # Perform contact tracing
@@ -731,11 +728,10 @@ temp <- tempfile()
 contactTrace <- Trace(movements = transfers,
                       root = outbreak,
                       tEnd = Sys.Date(),
-                      days = 365)
+                      days = days)
 
 show(contactTrace)
 Report(contactTrace)
-#Ask Stefan how to plot a list
 ```
 <br>
 <br>
@@ -747,18 +743,25 @@ Report(contactTrace)
 buffer_sp  <- spTransform(buffer_sp, CRS("+init=epsg:3021")) #FIX THE NAME NOT DUPLICATES!
 
 postnum_miss <- report_data_object()$result$postnum_miss
+postnum_not_miss <- report_data_object()$result$postnum_not_miss # LEAFLET MAP?
+
 PPN_is.na <- report_data_object()$result$PPN_is.na
 
 if (!all(is.na(over(postnum_miss, buffer_sp)))) {
 
   intersec_km <- postnum_miss[buffer_sp, ]
+  intersec_km  <- spTransform(intersec_km, CRS("+init=epsg:4326"))
 
   # match postnummer with postnummer of PPN is.na
 
   PPN_pro_km <- PPN_is.na[PPN_is.na$Postnummer %in%
                           intersec_km@data$POSTALCODE, ]
+
+  intersec_km_test <- exists("intersec_km")
+
   } else {
 
+  intersec_km_test <- exists("intersec_km")
   intersec_km_NM <- postnum_not_miss[buffer_sp,]
   intersec_km_NM  <- spTransform(intersec_km_NM, CRS("+init=epsg:4326"))
 
@@ -767,16 +770,13 @@ if (!all(is.na(over(postnum_miss, buffer_sp)))) {
 ```
 
 
-```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE,fig.align='center',fig.width=9.5, fig.height=7, results='asis'}
-
-postnum_not_miss <-report_data_object()$result$postnum_not_miss # LEAFLET MAP?
+```{r PlotMissing, fig.width=12, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE, fig.align='center',fig.width=9.5, fig.height=7, results='asis', eval=intersec_km_test}
 
 # CRS transformation
 buffer_sp2  <- buffer_sp
 farms_in_buffers2  <- farms_in_buffers
 buffer_sp2  <- spTransform(buffer_sp2, CRS("+init=epsg:4326"))
 farms_in_buffers2 <- spTransform(farms_in_buffers2, CRS("+init=epsg:4326"))
-intersec_km  <- spTransform(intersec_km, CRS("+init=epsg:4326"))
 
 # Set palette and popups for Leaflet map
 if(length(buffer_sp2@data$buffer) == 1) {
@@ -819,9 +819,16 @@ popups2 <- popups2 <- paste(sep = "<br/>",
                             "<b>Adress</b>", farms_in_buffers2@data$Adress,
                             "<b>Species</b>",farms_in_buffers2@data$Species)
 
+if (exists("intersec_km")) {
 popups3 <- paste(sep = "<br/>",
                  "<b>Postnummer</b>",
                  intersec_km@data$POSTALCODE)
+  }else{
+    
+popups3 <- paste(sep = "<br/>",
+                 "<b>Postnummer</b>",
+                 intersec_km_NM@data$POSTALCODE)
+}
 
 box2 <- as.vector(outbreak1_wgs@bbox)
 
@@ -834,38 +841,8 @@ LeafletMap2 <- leaflet() %>% addTiles(group = "OSM") %>%
 if(exists("intersec_km_NM")) {
 
   LeafletMap2 %>%
-
-  addPolygons(data = intersec_km,
-              fillColor = "black",
-              stroke = TRUE,
-              weight = 2,
-              opacity = 1,
-              color = 'white',
-              dashArray = '3',
-              fillOpacity = 0.3,
-              popup = popups3,
-              group = "intersec_km") %>%
-
-  addPolygons(data = intersec_km_NM,
-              fillColor = "green",
-              stroke = TRUE,
-              weight = 0.5,
-              color = "black",
-              fillOpacity = 0.3,
-              group = "intersec_km_NM") %>%
-
-  addCircleMarkers(data = farms_in_buffers2,
-                   stroke= TRUE,
-                   color="black",
-                   weight=2,
-                   radius=3,
-                   fill = TRUE,
-                   fillColor = ~pal(as.numeric(farms_in_buffers@data$buffer)),
-                   fillOpacity = 1,
-                   popup = popups2,
-                   group = "PPNs")  %>%
-
-    addPolygons(data = buffer_sp2,
+    
+  addPolygons(data = buffer_sp2,
               fillColor = ~pal2(as.numeric(buffer_sp@data$buffer)),
               stroke = TRUE,
               weight = 0.5,
@@ -874,25 +851,16 @@ if(exists("intersec_km_NM")) {
               popup = popups,
               group = "Buffers") %>%
 
-  addLayersControl(
-    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
-    overlayGroups = c("Buffers", "PPNs", "intersec_km", "intersec_km_NM" ),
-    options = layersControlOptions(collapsed = TRUE))
-
-  } else {
-
-      LeafletMap2 %>%
-
-  addPolygons(data = intersec_km,
-              fillColor = "black",
+  addPolygons(data = intersec_km_NM,
+              fillColor = "green",
               stroke = TRUE,
               weight = 2,
               opacity = 1,
               color = 'white',
-             dashArray = '3',
+              dashArray = '3',
               fillOpacity = 0.3,
               popup = popups3,
-              group = "Postnummers") %>%
+              group = "intersec_km") %>%
 
    addCircleMarkers(data = farms_in_buffers2,
                    stroke= TRUE,
@@ -905,6 +873,16 @@ if(exists("intersec_km_NM")) {
                    popup = popups2,
                    group = "PPNs")  %>%
 
+    
+  addLayersControl(
+    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+    overlayGroups = c("Buffers", "PPNs", "intersec_km", "intersec_km_NM" ),
+    options = layersControlOptions(collapsed = TRUE))
+
+  } else {
+
+    LeafletMap2 %>%
+  
     addPolygons(data = buffer_sp2,
               fillColor = ~pal2(as.numeric(buffer_sp@data$buffer)),
               stroke = TRUE,
@@ -913,6 +891,28 @@ if(exists("intersec_km_NM")) {
               fillOpacity = 0.3,
               popup = popups,
               group = "Buffers") %>%
+      
+    addPolygons(data = intersec_km,
+              fillColor = "black",
+              stroke = TRUE,
+              weight = 2,
+              opacity = 1,
+              color = 'white',
+              dashArray = '3',
+              fillOpacity = 0.3,
+              popup = popups3,
+              group = "Postnummers") %>%
+    
+    addCircleMarkers(data = farms_in_buffers2,
+                   stroke= TRUE,
+                   color="black",
+                   weight=2,
+                   radius=3,
+                   fill = TRUE,
+                   fillColor = ~pal(as.numeric(farms_in_buffers@data$buffer)),
+                   fillOpacity = 1,
+                   popup = popups2,
+                   group = "PPNs")  %>%
 
     addLayersControl(baseGroups = c("OSM", "CartoDB", "Toner Lite"),
                      overlayGroups = c("Buffers", "PPNs", "Postnummers"),
@@ -972,17 +972,17 @@ if(exists("PPN_pro_km")) {
   ppn_post <- PPN_pro_km[c("Postnummer",
                            "Ppn",
                            "Species",
-                           "tot_anim",
                            "Namn",
                            "Kommun",
                            "Adress",
                            "Telefonnummer.1",
                            "Mobilnummer")]
+  
+  ppn_post <- ppn_post[!duplicated(ppn_post),]
 
   colnames(ppn_post) <- c("Postnr",
                           "Ppn",
                           "Species",
-                          "tot_anim",
                           "Namn",
                           "Kommun",
                           "Adress",
@@ -1001,7 +1001,7 @@ if(exists("PPN_pro_km")) {
 
   } else {
 
-  cat("* **Zip-codes intersecting buffers have no PPNs without missing coordinates**   ")
+  cat("* **No PPNs with missing coordinates within postnummers**   ")
 
 }
 ```
@@ -1048,10 +1048,9 @@ Data reported in the following tables are extracted from SVASSS's alarms dataset
 Information reported in the table were obtained by matching PPNs inside the buffer area (or within the postnummer if PPN coordinates were missing) with PPNs present in the dataset of clinical records. Data are ordered first by Syndrome then by PPN
 
 <br>
-
 ```{r SVASSS CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
-SVASSS.SJV.alarms.data <- result$SVASSS.SJV.alarms.data
+SVASSS.SJV.alarms.data <- report_data_object()$result$SVASSS.SJV.alarms.data
 
 SVASSS.SJV <- SVASSS.SJV.alarms.data
 
@@ -1101,6 +1100,7 @@ if(nrow(SVASSS.SJV) != 0) {
 <br>
 
 #### 12.2. **JBV DATASET OF CLINICAL RECORDS**
+<br>
 
 ```{r JBV CLINICAL, echo=FALSE, results='asis', eval=TRUE}
 
@@ -1153,10 +1153,9 @@ if(nrow(sjv.data) != 0) {
 
 ### 13. **URAX DATA**
 <br>
-
 ```{r  URAX, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=FALSE}
 
-urax <- report_data_object()$result$urax
+urax <- result$urax
 postnummer <- report_data_object()$postnummer
 
 urax$Postnummer <- sub(" ", "", urax$Postnummer) # use regexpression
@@ -1172,12 +1171,55 @@ urax_match_ppn_nc <- urax_ppn_nc[PPN_pro_km_2$Ppn %in% urax_ppn_nc$PPN, ]
 
 # match postnummer
 urax_no_ppn <- urax[is.na(urax$PPN) & !is.na(urax$Postnummer), ]
-urax_post2 <- postnummer[postnummer@data$POSTALCODE %in% urax_no_ppn$Postnummer, ] # perso un postalcode
+urax_post2 <- postnummer[postnummer@data$POSTALCODE %in% urax_no_ppn$Postnummer, ] # lose un postalcode
+  
+urax_post2_cen <- sapply(1:nrow(urax_post2), function(x) {
+  urax_post2@polygons[[x]]@labpt
+  })
+
+urax_post2_cen <- data.frame(t(urax_post2_cen), row.names = NULL)
+urax_post2_cen$postnummer <- as.vector(urax_post2@data$POSTALCODE)
+colnames(urax_post2_cen) <- c("X","Y","postnummer")
 
 # urax no match display in a table
 urax_table <- urax[is.na(urax$PPN) & is.na(urax$Postnummer), ]
 
 # map
+
+outbreak1_wgs <- spTransform(outbreak1, CRS("+init=epsg:4326"))
+pop_out <- paste0("<b>", "PPN: ", "</b>", outbreak1_wgs@data$Ppn, "<br>",
+                  "<b>", "Djurslag: ","</b>", outbreak1_wgs@data$Species, "<br>",
+                  "<b>", "Kommun: ", "</b>", outbreak1_wgs@data$Kommun)
+
+box <- as.vector(outbreak1_wgs@bbox)
+
+LeafletMap1 <- leaflet(outbreak1_wgs) %>% addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  fitBounds(box[1], box[2], box[3], box[4])
+
+LeafletMap1 %>% addCircleMarkers(data = outbreak1_wgs,
+                                 radius = 5,
+                                 stroke = TRUE,
+                                 color = "black",
+                                 weight = 2,
+                                 fillColor = "red",
+                                 fillOpacity = 1,
+                                 popup = pop_out,
+                                 group = "Outbreak")  %>%
+
+addLayersControl(
+    baseGroups = c("OSM", "CartoDB", "Toner Lite"),
+    overlayGroups = "Outbreak",
+    options = layersControlOptions(collapsed = FALSE)) %>%
+
+addLegend("bottomright",
+          values = outbreak1_wgs@data$Ppn,
+          colors = "red",
+          labels = "Investigated PPNs",
+          opacity = 1)
+
+
 
 if (nrow(urax_match_ppn) != 0) {
   urax_geo <-  farms_RT90[farms_RT90$Ppn %in% urax_match_ppn$PPN,]
@@ -1188,7 +1230,6 @@ if (nrow(urax_match_ppn_nc) != 0) {
 }
 
 ## continue
-
 if(nrow(urax_match_ppn) != 0) {
 
   urax_table <- urax_table[, c("Svalauppdragsid",
@@ -1207,36 +1248,43 @@ if(nrow(urax_match_ppn) != 0) {
 }
 
 ```
-<br>
-<br>
 
-### **APPENDIX - EXTRA INFORMATION**
-<br>
+```{r  URAX_final, warning=FALSE, message=FALSE, echo = FALSE, results='asis', eval=TRUE}
 
-#### **CONTACT TRACING**  output from EpiContacTrace
-<br>
-```{r EpiContact_Report, results='asis', warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
+urax <- result$urax
+postnummer <- report_data_object()$postnummer
 
-if(exists("contactTrace")) {
-#z<-readLines(paste0(contactTrace@root, ".html"))
-#invisible(cat(z))
+urax$Postnummer <- sub(" ", "", urax$Postnummer) # use regexpression
+urax$Postnummer <- as.numeric(urax$Postnummer)
 
-if(length(contactTrace) == 1)  {
+# match ppns with coords
+urax_ppn <- urax[!is.na(urax$PPN), ]
+urax_match_ppn <- urax_ppn[urax_ppn$PPN %in% farms_in_buffers@data$Ppn, ]
 
-  z <- readLines(paste0(contactTrace@root, ".html"))
-  invisible(cat(z))
+# match ppns without coords
+urax_ppn_nc <- urax[is.na(urax$PPN), ]
+urax_match_ppn_nc <- urax_ppn_nc[PPN_pro_km_2$Ppn %in% urax_ppn_nc$PPN, ]
 
+urax_final <- rbind(urax_match_ppn, urax_match_ppn_nc)
+
+## continue
+if(nrow(urax_final) != 0) {
+
+  urax_table <- urax_final[, c("Svalauppdragsid",
+                               "Namn",
+                               "Adress",
+                               "Agens",
+                               "Status",
+                               "Avslutat")]
+
+  cat("* **URAX data within considered spatial radius and time frame**" )
+
+  kable(urax_table, filter="top", rownames = FALSE)
+  
   } else {
 
-    for(i in 1:length(ppn)) {
-      z <- readLines(paste0(contactTrace[[i]]@root, ".html"))
-      invisible(cat(z))
-      }
-    }
+  cat("* **No PPNs are present in URAX data within considered spatial radius and time frame**" )
 
-  } else {
-
-    cat("* **No ContactTrace available for the inputed PPN**" )
 }
-
 ```
+<br>
