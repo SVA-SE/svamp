@@ -2,7 +2,7 @@
 % Please edit documentation in R/buffer.R
 \name{buffer_ppn}
 \alias{buffer_ppn}
-\title{buffer__ppn}
+\title{buffer_ppn}
 \usage{
 buffer_ppn(ppn, buffer_size)
 }

@@ -4,8 +4,8 @@
 \alias{report}
 \title{Produce an .html report}
 \usage{
-report(ppn = 94403, ppn_obj = system.file("extdata/result.rda", package =
-  "svamp"), firstname = "", lastname = "", buffer_size = 1, days = 90,
+report(ppn, ppn_obj = system.file("extdata/result.rda", package = "svamp"),
+  firstname = "", lastname = "", buffer_size = c(3, 10), days = 90,
   template = "report", format = c("knitr"), view = FALSE)
 }
 \arguments{

@@ -59,7 +59,7 @@ datatable(location, rownames = FALSE,  filter='top')
 <br>
 ```{r LeafletMap1, warning=FALSE, message=FALSE, echo = FALSE, fig.align='center',fig.width=9.5, fig.height=7, results='asis'}
 
-outbreak1 <- outbreak[ , c("Ppn", "Species", "Kommun")] # change indices
+outbreak1 <- outbreak[ , c("Ppn", "Species", "Kommun")]
 
 outbreak1_wgs <- spTransform(outbreak1, CRS("+init=epsg:4326"))
 pop_out <- paste0("<b>", "PPN: ", "</b>", outbreak1_wgs@data$Ppn, "<br>",
@@ -249,12 +249,14 @@ if (any(is.na(outbreak_no_sp$tot_anim))) {
       cat("<br>", "<br>", "**OBS. Some information about number of animals are missing (blank or NA).
           Check the table below for complete information**", "<br>", "<br>")
 
-      col_names <- names(outb_in_PPN2)
+}
+
+col_names <- names(outb_in_PPN2)
       outb_in_PPN2[, col_names] <- lapply(outb_in_PPN2[, col_names] , factor)
 
                                  datatable(outb_in_PPN2, filter='top', rownames =FALSE,
                                            escape = FALSE, options = list(pageLength = 3))
-      }
+      
 ```
 <br>
 <br>

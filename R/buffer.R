@@ -1,6 +1,6 @@
 ##' Generate buffers
 ##'
-##' @title buffer__ppn
+##' @title buffer_ppn
 ##' @param ppn A spatial point dataframe
 ##' @param buffer_size A vector of integers
 ##' @import rgeos

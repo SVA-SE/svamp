@@ -31,4 +31,5 @@ Collate:
     'report.R'
     'buffer.R'
     'distance.R'
+    'draw_map.R'
 RoxygenNote: 5.0.1
