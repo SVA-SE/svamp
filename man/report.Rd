@@ -4,12 +4,15 @@
 \alias{report}
 \title{Produce an .html report}
 \usage{
-report(ppn, ppn_obj = system.file("extdata/result.rda", package = "svamp"),
-  firstname = "", lastname = "", buffer_size = c(3, 10), days = 90,
-  template = "report", format = c("knitr"), view = FALSE)
+report(ppn, ppn_sympt = "", ppn_obj = system.file("extdata/result.rda",
+  package = "svamp"), firstname = "", lastname = "", buffer_size = c(3,
+  10), days = 90, template = "report", format = c("knitr"),
+  view = FALSE)
 }
 \arguments{
 \item{ppn}{Ppn numbers (vector of int numbers, comma separeted)}
+
+\item{ppn_sympt}{PPN with symptoms}
 
 \item{ppn_obj}{Path to the list of objects output from svdc package}
 
