@@ -36,26 +36,7 @@ if(all(!farms_RT90@data$Ppn %in% ppn)) { # copy this error message in report.R
 ### 1. **GEOGRAPHIC LOCATION**
 <br>
 
-#### 1.1 **ADDRESS**
-<br>
-```{r Addresses, warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
-
-location <- data.frame("PPN " = as.factor(outbreak@data$Ppn),
-                       "Lan" = toupper(outbreak@data$Lan),
-                       "Kommun" = toupper(outbreak@data$Kommun),
-                       "Adress" = toupper(outbreak@data$Adress),
-                       "Postadr." = toupper(outbreak@data$Postadress),
-                       "Postnr." = toupper(outbreak@data$Postnummer),
-                       "Fastighetsbet." = toupper(outbreak@data$Fastighetsbeteckning))
-
-location <- unique(location)
-
-datatable(location, rownames = FALSE,  filter='top')
-
-```
-<br>
-
-#### 1.2 **OUTBREAKS MAP** with PPNs under investigation
+#### 1.1 **OUTBREAKS MAP** with PPNs under investigation
 <br>
 ```{r LeafletMap1, warning=FALSE, message=FALSE, echo = FALSE, fig.align='center',fig.width=9.5, fig.height=7, results='asis'}
 
@@ -93,6 +74,25 @@ addLegend("bottomright",
           colors = "red",
           labels = "Investigated PPNs",
           opacity = 1)
+
+```
+<br>
+
+#### 1.2 **ADDRESS**
+<br>
+```{r Addresses, warning = FALSE, message = FALSE, echo = FALSE, eval=TRUE}
+
+location <- data.frame("PPN " = as.factor(outbreak@data$Ppn),
+                       "Lan" = toupper(outbreak@data$Lan),
+                       "Kommun" = toupper(outbreak@data$Kommun),
+                       "Adress" = toupper(outbreak@data$Adress),
+                       "Postadr." = toupper(outbreak@data$Postadress),
+                       "Postnr." = toupper(outbreak@data$Postnummer),
+                       "Fastighetsbet." = toupper(outbreak@data$Fastighetsbeteckning))
+
+location <- unique(location)
+
+datatable(location, rownames = FALSE,  filter='top', options = list(pageLength = 3))
 
 ```
 <br>
@@ -763,10 +763,16 @@ if (!all(is.na(over(postnum_miss, buffer_sp)))) {
 
   } else {
 
+    if (!all(is.na(over(postnum_miss, buffer_sp)))) {
   intersec_km_test <- exists("intersec_km")
   intersec_km_NM <- postnum_not_miss[buffer_sp,]
   intersec_km_NM  <- spTransform(intersec_km_NM, CRS("+init=epsg:4326"))
+  
+  } else {
 
+     intersec_km_test <- exists("intersec_km")
+     cat("Buffers don't intersect any postnummer. Check PPN coordinates (location and proj)")
+  }
 }
 
 ```
@@ -937,7 +943,7 @@ if(exists("intersec_km_NM")) {
 <br>
 ```{r Missing table1, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
-if(exists("PPN_pro_km")) {
+if(exists("PPN_pro_km") & nrow(PPN_pro_km) > 0) {
 
   ppn_post <- unique(PPN_pro_km[c("Postnummer", "Ppn", "Species", "tot_anim")])
   ppn_post_len <- as.data.frame(table(ppn_post$Postnummer))
@@ -956,7 +962,7 @@ if(exists("PPN_pro_km")) {
 
   } else {
 
-  cat("* **Zip-codes intersecting buffers have no PPNs without missing coordinates**   ")
+  cat("* **Zip-codes intersecting buffers have no PPNs without missing coordinates**")
 
 }
 ```
@@ -969,7 +975,7 @@ Duplicated PPNs are present when Djurhållare and Djurinnehavare are two differe
 
 ```{r Missing table2, results='asis', warning=FALSE, message=FALSE, echo = FALSE}
 
-if(exists("PPN_pro_km")) {
+if(exists("PPN_pro_km") & nrow(PPN_pro_km) > 0) {
 
   ppn_post <- PPN_pro_km[c("Postnummer",
                            "Ppn",
@@ -1094,11 +1100,12 @@ if(nrow(SVASSS.SJV) != 0) {
 
   } else {
 
-  cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**", "<br>")
+    cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**")
 
 }
 
 ```
+<br>
 <br>
 
 #### 12.2. **JBV DATASET OF CLINICAL RECORDS**
@@ -1146,7 +1153,7 @@ if(nrow(sjv.data) != 0) {
 
   } else {
 
-    cat("* **No SVASSS clinical data are present for the considered PPNs and time frame**", "<br>")
+    cat("* **No JBV clinical data are present for the considered PPNs and time frame**")
 
 }
 ```
@@ -1281,7 +1288,7 @@ if(nrow(urax_final) != 0) {
 
   cat("* **URAX data within considered spatial radius and time frame**" )
 
-  kable(urax_table, filter="top", rownames = FALSE)
+  kable(urax_table, filter="top", row.names = FALSE)
   
   } else {
 

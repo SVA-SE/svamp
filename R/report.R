@@ -8,6 +8,7 @@
 #' @param X X-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param Y Y-coordinate of the outbreak provided by the user when ppn coordinates are missing
 #' @param buffer_size Size in kilometers of the buffers drawn around the ppn (vector of numbers, comma separeted)
+#' @param ppn_sympt PPN with symptoms
 #' @param days Set the number of days to use in EpiContactTrace (max 180)
 #' @param view Make TRUE to pop a browser
 #' @return An html report
@@ -24,6 +25,7 @@
 #' @export
 
 report <- function(ppn,
+                   ppn_sympt = "",
                    ppn_obj = system.file("extdata/result.rda", package = "svamp"), #save inUBUNTU the result from SVDC
                    firstname = "",
                    lastname = "",
@@ -113,6 +115,7 @@ report <- function(ppn,
   assign("firstname", firstname, envir = .svamp_env)
   assign("lastname", lastname, envir = .svamp_env)
   assign("days", days, envir = .svamp_env)
+  assign("ppn_sympt", ppn_sympt, envir = .svamp_env)
 #   assign("X", X, envir = .svamp_env)
 #   assign("Y", Y, envir = .svamp_env)
   assign("buffer_size", buffer_size, envir = .svamp_env)
