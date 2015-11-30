@@ -132,7 +132,7 @@ report <- function(ppn,
       utils::browseURL(a)
   }
   if(!(view)) {
-      return(readLines(outputfile_html))
+      invisible(readLines(outputfile_html))
   }
 }
 
