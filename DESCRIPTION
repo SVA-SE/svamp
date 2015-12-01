@@ -1,6 +1,6 @@
 Package: svamp
 Title: Tools for support in outbreak management and suspicion investigation
-Version: 0.2
+Version: 0.2.0.1
 Date: 2015-09-14
 Author: Giampaolo Cocca, Thomas Rosendal
 Maintainer: Giampaolo Cocca <giampaolo.cocca@sva.se>
