@@ -401,7 +401,7 @@ return (n.PPN.in)
 ```
 <br>
 
-```{r Plot_Animal, results='asis',echo=FALSE, message=FALSE, warning=FALSE,fig.width=10}
+```{r Plot_Animal, results='asis',echo=FALSE, message=FALSE, warning=FALSE, fig.height= 4, fig.width=12}
 
 b <- split(n.PPN.in1,
            factor(n.PPN.in1$buffer, levels=rev(levels(n.PPN.in1$buffer))),
@@ -621,7 +621,7 @@ addLegend("bottomright",
 <br>
 <br>
 
-### 8. NUMBER OF ANIMALS OF PPNs WITHIN RESTRICTION ZONES
+### 8. **NUMBER OF ANIMALS OF PPNs WITHIN RESTRICTION ZONES**
 <br>
 ```{r PPNs Anim number, results='asis', echo=FALSE, eval=TRUE}
 
@@ -665,7 +665,7 @@ g3 <- paste0("<br>", "**8a. PPNs' NUMBER OF ANIMALS WITHIN BUFFER **", names(n_a
 
 `r paste(knit(text = out3), collapse = '\n')`
 
-### 9. OWNERS OF PPNs WITHIN RESTRICTION ZONES
+### 9. **OWNERS OF PPNs WITHIN RESTRICTION ZONES**
 
 ```{r PPNs Anim owner, results='asis', echo=FALSE, eval=TRUE}
 
@@ -733,7 +733,6 @@ contactTrace <- Trace(movements = transfers,
                       days = days)
 
 show(contactTrace)
-Report(contactTrace)
 ```
 <br>
 <br>
