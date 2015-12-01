@@ -1,4 +1,3 @@
-
 #' Produce an .html report
 #'
 #' Produce an .html report with information for outbreak/suspicion management
