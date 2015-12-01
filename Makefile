@@ -1,12 +1,14 @@
 # Determine package name and version from DESCRIPTION file
 PKG_VERSION=$(shell grep -i ^version DESCRIPTION | cut -d : -d \  -f 2)
 PKG_NAME=$(shell grep -i ^package DESCRIPTION | cut -d : -d \  -f 2)
+PKG_SHA=$(shell Rscript -e "library(git2r); cat(substr(commits(repository(getwd()), n = 1)[[1]]@sha, start = 1, stop = 7))")
 
 # Roxygen version to check before generating documentation
  ROXYGEN_VERSION=5.0.1
 
 # Name of built package
 PKG_TAR=$(PKG_NAME)_$(PKG_VERSION).tar.gz
+PKG_TAR2=$(PKG_NAME)_$(PKG_VERSION)_$(PKG_SHA).tar.gz
 
 # Install package
 install:
@@ -27,9 +29,14 @@ roxygen:
 pdf: roxygen
 	cd .. && R CMD Rd2pdf --force $(PKG_NAME)
 
+
 # Build and check package
-check: clean
+build: clean
 	cd .. && R CMD build --no-build-vignettes $(PKG_NAME)
+	cd .. && cp $(PKG_TAR) $(PKG_TAR2)
+
+# Build and check package
+check: build
 	cd .. && R CMD check --no-manual --no-vignettes --no-build-vignettes $(PKG_TAR)
 
 clean:
