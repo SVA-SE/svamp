@@ -125,7 +125,7 @@ report <- function(ppn,
 
   td <- tempdir()
 
-  outputfile_html <- rmarkdown::render(template, output_dir = td)
+  outputfile_html <- rmarkdown::render(template, output_dir = td, encoding = "UTF-8")
 
   if(view) {
       a <- normalizePath(file.path(outputfile_html), winslash = "/")
