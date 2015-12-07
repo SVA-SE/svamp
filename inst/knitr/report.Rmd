@@ -49,12 +49,24 @@ pop_out <- paste0("<b>", "PPN: ", "</b>", outbreak1_wgs@data$Ppn, "<br>",
 
 box <- as.vector(outbreak1_wgs@bbox)
 
-LeafletMap1 <- leaflet(outbreak1_wgs) %>% addTiles(group = "OSM") %>%
-  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
-  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-  fitBounds(box[1], box[2], box[3], box[4])
+if(length(ppn) == 1) {
+  
+  LeafletMap1 <- leaflet(outbreak1_wgs) %>% addTiles(group = "OSM") %>%
+    addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+    addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+    setView(outbreak1_wgs@coords[1], outbreak1_wgs@coords[2], zoom = 9)
+    
+  } else {
+    
+    LeafletMap1 <- leaflet(outbreak1_wgs) %>% addTiles(group = "OSM") %>%
+      addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+      addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+      fitBounds(box[1], box[2], box[3], box[4]) 
+}
 
-LeafletMap1 %>% addCircleMarkers(data = outbreak1_wgs,
+LeafletMap1 %>% 
+  
+  addCircleMarkers(data = outbreak1_wgs,
                                  radius = 5,
                                  stroke = TRUE,
                                  color = "black",
@@ -63,13 +75,13 @@ LeafletMap1 %>% addCircleMarkers(data = outbreak1_wgs,
                                  fillOpacity = 1,
                                  popup = pop_out,
                                  group = "PPNs")  %>%
-
-addLayersControl(
+  
+  addLayersControl(
     baseGroups = c("OSM", "CartoDB", "Toner Lite"),
     overlayGroups = "PPNs",
     options = layersControlOptions(collapsed = FALSE)) %>%
-
-addLegend("bottomright",
+  
+  addLegend("bottomright",
           values = outbreak1_wgs@data$Ppn,
           colors = "red",
           labels = "Investigated PPNs",
@@ -172,7 +184,8 @@ outb_in_PPN2 <- outb_in_PPN
 outb_in_PPN$Ppn <- as.factor(outb_in_PPN$Ppn)
 
 outb_in_PPN <- split(outb_in_PPN,
-                     factor(outb_in_PPN$Ppn, levels=rev(levels(outb_in_PPN$Ppn))),
+                     factor(outb_in_PPN$Ppn, 
+                            levels=rev(levels(outb_in_PPN$Ppn))),
                      drop = TRUE)
 
 plot_herds <- function(outb_in_PPN) {
@@ -291,8 +304,7 @@ for (i in 1:length(vet_list)) {
 out = NULL
 for (j in 1:length(vet_list)) {
 g <- paste("<br>", "<br>", "**Veterinary districts most closest to PPN** ", names(vet_list[j]), "<br>", "<br>")
-  knit_expanded <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(vet_list[[", j, "]],
-                          filter='top', rownames =FALSE, escape = FALSE, options = list(pageLength = 3))\n\n```")
+  knit_expanded <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(vet_list[[", j, "]], rownames =FALSE, escape = FALSE, options = list(pageLength = 3))\n\n```")
   out = c(out, g, knit_expanded)
 
   }
@@ -345,9 +357,16 @@ There is a total of **`r if(!identical(farms_in_buffers, outbreak)){sum(nrow(far
 
 ```{r PPN in Buffers, results='asis', echo=FALSE, warning=FALSE, message=FALSE}
 
-z <- data.frame(table(farms_in_buffers@data$buffer))
-colnames(z) <- c("buffer", "n.")
-kable(z, align = "c")
+ppn_zone_sum <- data.frame(table(farms_in_buffers@data$buffer))
+colnames(ppn_zone_sum) <- c("Buffer_zone", "PPN (tot.)")
+ppn_zone_sum <- ppn_zone_sum[rev(order(ppn_zone_sum$Buffer_zone)), ]
+datatable(ppn_zone_sum,
+          rownames =FALSE,
+          escape = FALSE, 
+          options = list(columnDefs = list(
+                list(className = 'dt-center',
+                     targets = c(0,1)))
+           ))
 
 ```
 <br>
@@ -394,7 +413,6 @@ return (n.PPN.in)
   n.PPN.in1 <- n.PPN.in1[!duplicated(n.PPN.in1[c("Ppn",
                                                  "Adress",
                                                  "Typ",
-                                                 "Typ.1",
                                                  "tot_anim")]),]
 # }
 
@@ -512,7 +530,7 @@ farms <- lapply(farms, function(x) {
 out2 = NULL
 for (k in 1:length(farms)) {
 g2 <- paste0("<br>", "**7a. LIST OF PPNs WITHIN BUFFER **", names(farms[k]), "km", "<br>", "<br>")
-  knit_expanded2 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(farms[[", k, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+  knit_expanded2 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(farms[[", k, "]], escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out2 = c(out2, g2, knit_expanded2)
 
@@ -573,9 +591,10 @@ popups2 <- popups2 <- paste(sep = "<br/>",
                             "<b>Adress</b>", farms_in_buffers@data$Adress,
                             "<b>Species</b>",farms_in_buffers@data$Species)
 
-box2 <- as.vector(outbreak1_wgs@bbox)
+box2 <- as.vector(buffer_sp@bbox)
 
 # Draw the map
+
 LeafletMap2 <- leaflet() %>% addTiles(group = "OSM") %>%
   addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
   addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
@@ -602,21 +621,35 @@ LeafletMap2 %>%
                    fillOpacity = 1,
                    group = "PPNs",
                    popup = popups2)  %>%
+  
+  addCircleMarkers(data = outbreak1_wgs,
+                                 radius = 3,
+                                 stroke = TRUE,
+                                 color = "black",
+                                 weight = 2,
+                                 fillColor = "black",
+                                 fillOpacity = 1,
+                                 popup = pop_out,
+                                 group = "Outbreak") %>%
 
   addLayersControl(
     baseGroups = c("OSM", "CartoDB", "Toner Lite"),
-    overlayGroups = c("Buffers", "PPNs"),
+    overlayGroups = c("Buffers", "PPNs", "Outbreak"),
     options = layersControlOptions(collapsed = TRUE))   %>%
+  
+  addLegend("bottomright",
+            values = buffer_sp@data$buffer,
+            pal = pal2,
+            labels = buffer_sp@data$buffer,
+            labFormat = labelFormat(prefix = "Buffer ",
+                                    suffix = "km"),
+            opacity = 1)  %>%
+  
+  addLegend("bottomright",
+            colors = "black",
+            labels = "Outbreak",
+            opacity = 1)
 
-
-addLegend("bottomright",
-              values = buffer_sp@data$buffer,
-              title = "Restriction zones",
-              pal = pal2,
-              labels = buffer_sp@data$buffer,
-              labFormat = labelFormat(prefix = "Buffer ",
-                                      suffix = "km"),
-              opacity = 0.7)
 ```
 <br>
 <br>
@@ -631,6 +664,7 @@ farms_in_buffers3 <- farms_in_buffers2[, c("Ppn", "buffer", "nearest")]
 n_anim_rz <- merge(n_anim_rz, farms_in_buffers3, by = "Ppn")
 
 n_anim_rz <- n_anim_rz[c("Ppn", "Species", "Typ", "tot_anim", "buffer", "nearest")]
+
 n_anim_rz <- n_anim_rz[!duplicated(n_anim_rz),]
 
 colnames(n_anim_rz) <-   c("Ppn",
@@ -640,7 +674,7 @@ colnames(n_anim_rz) <-   c("Ppn",
                            "buffer",
                            "near_out")
 
-col_names <- names(n_anim_rz)
+col_names <- names(n_anim_rz)[c(1, 2, 4, 5)]
 n_anim_rz[, col_names] <- lapply(n_anim_rz[, col_names] , factor)
 
 n_anim_rz <- split(n_anim_rz,
@@ -697,7 +731,7 @@ n_anim_own_rz <- lapply(n_anim_own_rz, function(x) {
 out4 = NULL
 for (h in 1:length(n_anim_own_rz)) {
 g4 <- paste0("<br>", "**9a. OWNERS OF PPNs WITHIN BUFFER** ", names(n_anim_own_rz[h]), "km", "<br>", "<br>")
-  knit_expanded4 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_own_rz[[", h, "]], filter='top', escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
+  knit_expanded4 <- paste0("\n```{r results='asis', echo=FALSE}\n\ndatatable(n_anim_own_rz[[", h, "]], escape = FALSE, rownames = FALSE, options = list(pageLength = 5))\n\n```")
 
   out4 = c(out4, g4, knit_expanded4)
 
@@ -837,13 +871,13 @@ popups3 <- paste(sep = "<br/>",
                  intersec_km_NM@data$POSTALCODE)
 }
 
-box2 <- as.vector(outbreak1_wgs@bbox)
+box3 <- as.vector(buffer_sp2@bbox)
 
 # Draw the map
 LeafletMap2 <- leaflet() %>% addTiles(group = "OSM") %>%
   addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
   addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-  fitBounds(box2[1], box2[2], box2[3], box2[4])
+  fitBounds(box3[1], box3[2], box3[3], box3[4])
 
 if(exists("intersec_km_NM")) {
 
@@ -996,7 +1030,7 @@ if(exists("PPN_pro_km") & nrow(PPN_pro_km) > 0) {
                           "Telefon",
                           "Mobil" )
 
-  col_names <- names(ppn_post)
+  col_names <- names(ppn_post)[c(1,2,3)]
   ppn_post[, col_names] <- lapply(ppn_post[, col_names] , factor)
 
   datatable(ppn_post, filter="top", rownames = FALSE,
@@ -1278,16 +1312,17 @@ urax_final <- rbind(urax_match_ppn, urax_match_ppn_nc)
 ## continue
 if(nrow(urax_final) != 0) {
 
-  urax_table <- urax_final[, c("Svalauppdragsid",
+  urax_table <- urax_final[, c("PPN",
+                               "Svalauppdragsid",
                                "Namn",
                                "Adress",
                                "Agens",
                                "Status",
                                "Avslutat")]
 
-  cat("* **URAX data within considered spatial radius and time frame**" )
+  cat("URAX data within considered spatial radius and time frame" )
 
-  kable(urax_table, filter="top", row.names = FALSE)
+  datatable(urax_table, rownames = FALSE)
   
   } else {
 

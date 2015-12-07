@@ -73,9 +73,17 @@ report <- function(ppn,
     stop("'ppn' is missing")
   }
 
+  if(missing(days)) {
+    stop("'days' is missing")
+  }
+
+  if(missing(buffer_size)) {
+    stop("'buffer_size' is missing")
+  }
+
   ## Check that the inputed ppn is numeric
   if(!is.numeric(ppn)) {
-    stop("Only numeric value are admitted")
+    stop("Only numeric values are admitted")
   }
 
   ## Check that the inputed ppns are present
@@ -86,18 +94,19 @@ report <- function(ppn,
 
   ## Check that the inputed ppn is numeric
   if(!is.numeric(buffer_size)) {
-    stop("Only numeric value are admitted")
+    stop("Only numeric values are admitted")
   }
-  ## Check that the inputed ppns are present
+  ## Check that buffer size is less than 50 km
   if (any(buffer_size > 50)) {
-    stop('The maximum radius for the buffer is 50km')
+    stop('The maximum radius for the buffer is 50 km')
   }
 
-  ## Check that the inputed ppn is numeric
+  ## Check that the argument days is numeric
   if(!is.numeric(days)) {
-    stop("Only numeric value are admitted")
+    stop("Check the days box. Only numeric value are admitted")
   }
-  ## Check that the inputed ppns are present
+
+  ## Check that the number of days is less than 180
   if (days > 180) {
     stop('The maximum number of days is 180. To go more back in time
          use the Movements App')
