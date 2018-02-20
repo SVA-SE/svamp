@@ -42,4 +42,4 @@ no particular order with draft prioritization (A-C) for each TODO item:
 
 *** Additional features not yet implemented
 **** TODO [#B] Map of herds in restriction zone(s) with layers by animal species.
-     So one can select and toggle a speceies on and off.
+        So one can select and toggle a speceies on and off.
