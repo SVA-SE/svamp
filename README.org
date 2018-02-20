@@ -21,32 +21,25 @@ The interface to the tool takes three arguments:
 In the feature list below, the PPN(s) in the argument will be referred
 to as the 'investigated PPN(s)'. These arguments are used to subset
 and match some data to produce a report. The features list here is in
-no particular order and needs to be prioritised:
+no particular order with draft prioritization (A-C) for each TODO item:
 
 *** Feature list
-**** TODO Plot the PPN(s) of interest on a map
-- [ ] If the PPN(s) of interest are missing spatial identifier, give a warning
-- [ ] Tabulate owner/associated person of the PPN(s) of interest
-- [ ] Graph the number of animals by species at the PPN(s) of interest
-- [ ] Tabulate the contact information for the veterinary district
-  associated with the PPN(s) of interest
-- [ ] Tabulate and graph the number animals by species in
-  the restriction zones defined by the distances in argument 2.
-- [ ] List the PPN(s) in the restriction zones
-- [ ] Plot the PPN(s) of interest, restriction zones and PPN(s) in the
-  restriction zones on a map.
-- [ ] Tabulate and graph the number herds by species in
-  the restriction zones.
-- [ ] Contact tracing for the PPN(s) of interest for the time given in
-  argument 3
-- [ ] tabulate herds with missing coordinates who's postal code intersect
-  the restriction zones
-- [ ] Plot map of postalcode that intersect restriction zones and
-  contain PPN(s)
-- [ ] tabulate SVASSS data for herds in the restriction zones
-- [ ] tabulate SJV clinical data for herds in the restriction zones
+**** TODO [#A] Plot the PPN(s) of interest on a map
+**** TODO [#B] If the PPN(s) of interest are missing spatial identifier, give a warning
+**** TODO [#B] Tabulate owner/associated person of the PPN(s) of interest
+**** TODO [#A] Graph the number of animals by species at the PPN(s) of interest
+**** TODO [#C] Tabulate the contact information for the veterinary district associated with the PPN(s) of interest
+**** TODO [#A] Tabulate and graph the number animals by species in the restriction zones defined by the distances in argument 2.
+**** TODO [#B] List the PPN(s) in the restriction zones
+**** TODO [#A] Plot the PPN(s) of interest, restriction zones and PPN(s) in the restriction zones on a map.
+**** TODO [#A] Tabulate and graph the number herds by species in the restriction zones.
+**** TODO [#B] Contact tracing for the PPN(s) of interest for the time given in argument 3
+**** TODO [#A] tabulate herds with missing coordinates who's postal code intersect the restriction zones
+**** TODO [#C] Plot map of postalcode that intersect restriction zones and contain PPN(s)
+**** TODO [#C] tabulate SVASSS data for herds in the restriction zones
+**** TODO [#C] tabulate SJV clinical data for herds in the restriction zones
 
 
-** Additional features not yet implemented
-
-- [ ] Other features?
+*** Additional features not yet implemented
+**** TODO [#B] Map of herds in restriction zone(s) with layers by animal species.
+     So one can select and toggle a speceies on and off.
