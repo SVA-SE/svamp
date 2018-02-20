@@ -1,10 +1,10 @@
-# svamp
+* svamp
 An R package that generates a geographic summary report for farm data in Sweden
 
 This package is a work in progress and is currently being modified to allow others to use it.
 We have removed all data, therefore nothing is working.
 
-# Implementation of features in URAX
+* Implementation of features in URAX
 
 Because this project lacks maintenance development resources, we would
 like to try to implement some of the features in URAX, an internal
