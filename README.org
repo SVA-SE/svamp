@@ -24,7 +24,7 @@ and match some data to produce a report. The features list here is in
 no particular order and needs to be prioritised:
 
 *** Feature list
-- [ ] Plot the PPN(s) of interest on a map
+**** TODO Plot the PPN(s) of interest on a map
 - [ ] If the PPN(s) of interest are missing spatial identifier, give a warning
 - [ ] Tabulate owner/associated person of the PPN(s) of interest
 - [ ] Graph the number of animals by species at the PPN(s) of interest
@@ -47,6 +47,6 @@ no particular order and needs to be prioritised:
 - [ ] tabulate SJV clinical data for herds in the restriction zones
 
 
-## Additional features not yet implemented
+** Additional features not yet implemented
 
 - [ ] Other features?
