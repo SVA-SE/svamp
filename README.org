@@ -33,7 +33,7 @@ no particular order with draft prioritization (A-C) for each TODO item:
 
 **** TODO [#A] Graph the number of animals by species at the PPN(s) of interest
 
-**** TODO [#C] Tabulate the contact information for the veterinary district associated with the PPN(s) of interest
+**** Tabulate the contact information for the veterinary district associated with the PPN(s) of interest
 
 **** TODO [#A] Tabulate and graph the number animals by species in the restriction zones defined by the distances in argument 2.
 
@@ -49,9 +49,9 @@ no particular order with draft prioritization (A-C) for each TODO item:
 
 **** TODO [#C] Plot map of postalcode that intersect restriction zones and contain PPN(s)
 
-**** TODO [#C] tabulate SVASSS data for herds in the restriction zones
+**** tabulate SVASSS data for herds in the restriction zones
 
-**** TODO [#C] tabulate SJV clinical data for herds in the restriction zones
+**** tabulate SJV clinical data for herds in the restriction zones
 
 *** Additional features not yet implemented
 
