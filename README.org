@@ -2,13 +2,15 @@
 An R package that generates a geographic summary report for farm data in Sweden
 
 This package is a work in progress and is currently being modified to allow others to use it.
-We have removed all data, therefore nothing is working.
+We have removed all data from this version.
 
 ** Implementation of features in URAX
 
-Because this project lacks maintenance development resources, we would
-like to try to implement some of the features in URAX, an internal
-project at SVA for managing a animal disease suspicions.
+Because this project lacks maintenance and development resources, it
+has been suggested that some of the features could be implemented in
+an SVA tool for task management and suspicion documentation
+(URAX). What follows is a draft list of features of the SVAMP software
+that could be used as a guideline for future redevelopment.
 
 *** Key features and priorities for re-implementation
 
@@ -21,7 +23,9 @@ The interface to the tool takes three arguments:
 In the feature list below, the PPN(s) in the argument will be referred
 to as the 'investigated PPN(s)'. These arguments are used to subset
 and match some data to produce a report. The features list here is in
-no particular order with draft prioritization (A-C) for each TODO item:
+no particular order with draft prioritisation (A-C) for each item;
+those items without a priority are seen as unnecessary parts of the
+software.
 
 *** Feature list
 
@@ -31,29 +35,29 @@ no particular order with draft prioritization (A-C) for each TODO item:
      implemented in a map that just highlights these PPN(s) among all
      other PPNS on the same map.
 **** TODO [#B] If the PPN(s) of interest are missing spatial identifier, give a warning
-     Give a warning is the PPN of interest is missing X, Y corrdinates
+     Give a warning is the PPN of interest is missing X, Y coordinates
      and instead use the postal code as the location. In this case the
      buffers for the calculated restriction zones need to be
      calculated around the postal code polygon, not the point, or
      centroid of the postal code.
 **** TODO [#B] Tabulate owner/associated person of the PPN(s) of interest
      This feature is not optimal as implemented today. I would like to
-     see the development of a tool to only summarize contact
-     information for a PPN in a statndard datastructure like perhaps
+     see the development of a tool to only summarise contact
+     information for a PPN in a standard data-structure like perhaps
      'vcard' that could then be passed on to the map popup, or a table
-     or whereever you need it. Right now the owner information summary
+     or wherever you need it. Right now the owner information summary
      does an adhoc summary of this as does the map popup.
 **** TODO [#A] Graph the number of animals by species at the PPN(s) of interest
      Just a bar graph. This could potentially be combined with the
      restriction zone graph somehow to simplify the output.
 **** Tabulate the contact information for the veterinary district associated with the PPN(s) of interest
-     This feature is considered to be un important and should not be
+     This feature is considered to be unimportant and should not be
      considered for reimplementation in URAX.
 **** TODO [#A] Tabulate and graph the number animals by species in the restriction zones defined by the distances in argument 2.
      Another set of bar graphs.
 **** TODO [#B] List the PPN(s) in the restriction zones
-     Just a table by their mambership to the restriction zones. This
-     could also be futher developed to include the potential
+     Just a table by their membership to the restriction zones. This
+     could also be further developed to include the potential
      candidates from the postal code zones that overlap the
      restriction zones to avoid the need for that other table. This
      would just require another column for those PPN's that 'could' be
